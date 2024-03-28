@@ -37,7 +37,7 @@ impl Game {
     fn render(&self) {
         let mut block = Block::new().title("Minesweeper").center();
         block.add_child(
-            self.board.get_layout(),
+            self.board.get_element(),
             Constrain::Length(self.board.height * 3),
         );
 
@@ -51,8 +51,15 @@ impl Game {
         };
 
         match code {
-            KeyCode::Esc => Err(Error::ExitErr),
-            _ => Ok(()),
+            KeyCode::Esc => return Err(Error::ExitErr),
+            KeyCode::Up => self.board.cur_up(),
+            KeyCode::Down => self.board.cur_down(),
+            KeyCode::Left => self.board.cur_left(),
+            KeyCode::Right => self.board.cur_right(),
+            _ => return Ok(()),
         }
+
+        self.render();
+        Ok(())
     }
 }

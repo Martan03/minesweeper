@@ -1,13 +1,21 @@
 use termint::{
+    enums::fg::Fg,
     geometry::{constrain::Constrain, direction::Direction},
     widgets::block::Block,
 };
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum CellType {
+    Hidden,
+    Visible,
+    Flag,
+}
 
 /// Struct representing cell in board
 #[derive(Debug, Clone)]
 pub struct Cell {
     value: u8,
-    visible: bool,
+    cell_type: CellType,
 }
 
 impl Cell {
@@ -15,7 +23,7 @@ impl Cell {
     pub fn new(value: u8) -> Self {
         Self {
             value,
-            visible: false,
+            cell_type: CellType::Hidden,
         }
     }
 
@@ -36,18 +44,35 @@ impl Cell {
 
     /// Sets [`Cell`] as visible
     pub fn show(&mut self) {
-        self.visible = true;
+        self.cell_type = CellType::Visible;
     }
 
-    /// Gets [`Cell`] visibility
-    pub fn visible(&self) -> bool {
-        self.visible
-    }
-
-    /// Gets termint element
+    /// Gets [`Cell`] termint element
     pub fn get_element(&self) -> Block {
         let mut block = Block::new().direction(Direction::Horizontal).center();
-        block.add_child(format!("{}", self.value), Constrain::Min(0));
+        match self.cell_type {
+            CellType::Hidden => {}
+            CellType::Visible => {
+                block.add_child(format!("{}", self.value), Constrain::Min(0))
+            }
+            CellType::Flag => block.add_child("F", Constrain::Min(0)),
+        }
+        block
+    }
+
+    /// Gets [`Cell`] as active termint element
+    pub fn get_element_act(&self) -> Block {
+        let mut block = Block::new()
+            .direction(Direction::Horizontal)
+            .border_color(Fg::Cyan)
+            .center();
+        match self.cell_type {
+            CellType::Hidden => {}
+            CellType::Visible => {
+                block.add_child(format!("{}", self.value), Constrain::Min(0))
+            }
+            CellType::Flag => block.add_child("F", Constrain::Min(0)),
+        }
         block
     }
 }

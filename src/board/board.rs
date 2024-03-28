@@ -1,8 +1,5 @@
 use rand::{thread_rng, Rng};
-use termint::{
-    geometry::constrain::Constrain,
-    widgets::{block::Block, layout::Layout},
-};
+use termint::{geometry::constrain::Constrain, widgets::layout::Layout};
 
 use super::cell::Cell;
 
@@ -12,6 +9,7 @@ pub struct Board {
     pub width: usize,
     pub height: usize,
     cells: Vec<Cell>,
+    cur: (usize, usize),
 }
 
 impl Board {
@@ -21,6 +19,7 @@ impl Board {
             width,
             height,
             cells: vec![Cell::new(0x00); width * height],
+            cur: (0, 0),
         }
     }
 
@@ -29,8 +28,8 @@ impl Board {
         self.cells.get(y * self.width + x)
     }
 
-    /// Gets [`Board`] [`Layout`]
-    pub fn get_layout(&self) -> Layout {
+    /// Gets [`Board`] as termint Layout element
+    pub fn get_element(&self) -> Layout {
         let mut layout = Layout::horizontal().center();
         layout.add_child(
             self.get_cells_layout(),
@@ -61,6 +60,28 @@ impl Board {
             self.inc_neighbors(rnd);
         }
     }
+
+    pub fn cur_up(&mut self) {
+        self.cur.1 = self.cur.1.checked_sub(1).unwrap_or(self.height - 1);
+    }
+
+    pub fn cur_down(&mut self) {
+        self.cur.1 += 1;
+        if self.cur.1 >= self.height {
+            self.cur.1 = 0;
+        }
+    }
+
+    pub fn cur_left(&mut self) {
+        self.cur.0 = self.cur.0.checked_sub(1).unwrap_or(self.width - 1);
+    }
+
+    pub fn cur_right(&mut self) {
+        self.cur.0 += 1;
+        if self.cur.0 >= self.height {
+            self.cur.0 = 0;
+        }
+    }
 }
 
 // Private methods implementations
@@ -70,10 +91,12 @@ impl Board {
         for y in 0..self.height {
             let mut row = Layout::horizontal();
             for x in 0..self.width {
-                row.add_child(
-                    self.cells[y * self.height + x].get_element(),
-                    Constrain::Length(5),
-                );
+                let cell = if self.cur.0 == x && self.cur.1 == y {
+                    self.cells[y * self.height + x].get_element_act()
+                } else {
+                    self.cells[y * self.height + x].get_element()
+                };
+                row.add_child(cell, Constrain::Length(5));
             }
             layout.add_child(row, Constrain::Length(3));
         }
