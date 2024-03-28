@@ -1,3 +1,5 @@
+use rand::{thread_rng, Rng};
+
 use super::cell::Cell;
 
 /// Struct representing board
@@ -31,5 +33,26 @@ impl Board {
     }
 
     /// Generates the [`Board`] - fills it with mines
-    pub fn generate(&mut self, mines: usize) {}
+    pub fn generate(&mut self, mines: usize) {
+        let mut rng = thread_rng();
+
+        let max = self.width * self.height;
+        for _ in 0..mines {
+            let mut rnd = rng.gen_range(0..max);
+            while self.cells[rnd].get() != 0xff {
+                rnd = rng.gen_range(0..max);
+            }
+
+            self.cells[rnd].set(0xff);
+        }
+    }
+}
+
+// Private methods implementations
+impl Board {
+    fn inc_near(&mut self, pos: usize) {
+        if pos > self.width {
+            let x = pos - self.width;
+        }
+    }
 }
