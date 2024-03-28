@@ -1,3 +1,8 @@
+use termint::{
+    geometry::{constrain::Constrain, direction::Direction},
+    widgets::block::Block,
+};
+
 /// Struct representing cell in board
 #[derive(Debug, Clone)]
 pub struct Cell {
@@ -37,5 +42,12 @@ impl Cell {
     /// Gets [`Cell`] visibility
     pub fn visible(&self) -> bool {
         self.visible
+    }
+
+    /// Gets termint element
+    pub fn get_element(&self) -> Block {
+        let mut block = Block::new().direction(Direction::Horizontal).center();
+        block.add_child(format!("{}", self.value), Constrain::Min(0));
+        block
     }
 }
