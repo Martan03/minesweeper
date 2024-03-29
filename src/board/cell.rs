@@ -3,6 +3,7 @@ use termint::{
     geometry::{constrain::Constrain, direction::Direction},
     widgets::{
         block::Block,
+        border::BorderType,
         span::{Span, StrSpanExtension},
     },
 };
@@ -63,10 +64,14 @@ impl Cell {
 
     /// Gets [`Cell`] termint element
     pub fn get_element(&self) -> Block {
-        let mut block = Block::new().direction(Direction::Horizontal).center();
+        let mut block = Block::new()
+            .direction(Direction::Horizontal)
+            .center()
+            .border_color(Fg::Gray);
         match self.cell_type {
             CellType::Hidden => {}
             CellType::Visible => {
+                block = block.border_color(Fg::Default);
                 block.add_child(self.get_element_vis(), Constrain::Min(0))
             }
             // 🚩
@@ -79,11 +84,13 @@ impl Cell {
     pub fn get_element_act(&self) -> Block {
         let mut block = Block::new()
             .direction(Direction::Horizontal)
-            .border_color(Fg::Cyan)
+            .border_type(BorderType::Thicker)
+            .border_color(Fg::Gray)
             .center();
         match self.cell_type {
             CellType::Hidden => {}
             CellType::Visible => {
+                block = block.border_color(Fg::Default);
                 block.add_child(self.get_element_vis(), Constrain::Min(0))
             }
             CellType::Flag => block.add_child("F", Constrain::Min(0)),
@@ -99,6 +106,11 @@ impl Cell {
     /// Checks whether cell is revealed
     pub fn is_visible(&self) -> bool {
         self.cell_type == CellType::Visible
+    }
+
+    /// Checks whether cell is flag
+    pub fn is_flag(&self) -> bool {
+        self.cell_type == CellType::Flag
     }
 }
 

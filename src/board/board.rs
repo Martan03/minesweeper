@@ -51,6 +51,10 @@ impl Board {
             self.generate();
         }
 
+        if self.cells[self.cur_id()].is_flag() {
+            return true;
+        }
+
         if self.cells[self.cur_id()].is_mine() {
             return false;
         }
