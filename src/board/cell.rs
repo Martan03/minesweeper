@@ -65,14 +65,10 @@ impl Cell {
 
     /// Gets [`Cell`] termint element
     pub fn get_element(&self) -> Block {
-        let mut block = Block::new()
-            .direction(Direction::Horizontal)
-            .center()
-            .border_color(Fg::Gray);
+        let mut block = Block::new().direction(Direction::Horizontal).center();
         match self.cell_type {
-            CellType::Hidden => {}
+            CellType::Hidden => block = block.border_color(Fg::Gray),
             CellType::Visible => {
-                block = block.border_color(Fg::Default);
                 block.add_child(self.get_element_vis(), Constrain::Min(0))
             }
             CellType::Flag => {
@@ -87,12 +83,10 @@ impl Cell {
         let mut block = Block::new()
             .direction(Direction::Horizontal)
             .border_type(BorderType::Thicker)
-            .border_color(Fg::Gray)
             .center();
         match self.cell_type {
-            CellType::Hidden => {}
+            CellType::Hidden => block = block.border_color(Fg::Gray),
             CellType::Visible => {
-                block = block.border_color(Fg::Default);
                 block.add_child(self.get_element_vis(), Constrain::Min(0))
             }
             CellType::Flag => {

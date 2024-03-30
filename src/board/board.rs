@@ -139,21 +139,25 @@ impl Board {
     fn generate(&mut self) {
         let mut rng = thread_rng();
 
-        let cur_id = self.cur.x + self.cur.y * self.width;
-        let cannot = self.get_neighbors(cur_id as isize);
+        let cannot = self.get_neighbors(&self.cur);
 
-        let max = self.width * self.height;
         for _ in 0..self.mines {
-            let mut rnd = rng.gen_range(0..max);
-            while self.cells[rnd].get() == 0xff
-                || cannot.contains(&(rnd as isize))
-                || rnd == cur_id
+            let mut x = rng.gen_range(0..self.width);
+            let mut y = rng.gen_range(0..self.height);
+
+            let mut id = x + y * self.width;
+            while self.cells[id].get() == 0xff
+                || cannot.contains(&Coords::new(x, y))
+                || x == self.cur.x
+                || y == self.cur.y
             {
-                rnd = rng.gen_range(0..max);
+                x = rng.gen_range(0..self.width);
+                y = rng.gen_range(0..self.height);
+                id = x + y * self.width;
             }
 
-            self.cells[rnd].set(0xff);
-            self.inc_neighbors(rnd);
+            self.cells[id].set(0xff);
+            self.inc_neighbors(id);
         }
     }
 
@@ -194,7 +198,7 @@ impl Board {
         cell.show();
         self.rev += 1;
         if cell.get() == 0x00 {
-            for n in self.get_neigh(&coords) {
+            for n in self.get_neighbors(&coords) {
                 self.reveal_cell(&n);
             }
         }
@@ -203,7 +207,7 @@ impl Board {
     /// Reveals neighbors of visible cell
     fn reveal_vis(&mut self) -> bool {
         let mut ret = true;
-        for n in self.get_neigh(&self.cur) {
+        for n in self.get_neighbors(&self.cur) {
             let cell = &mut self.cells[n.x + n.y * self.width];
             if cell.is_flag() {
                 continue;
@@ -222,21 +226,7 @@ impl Board {
         self.width * self.cur.y + self.cur.x
     }
 
-    /// Gets all neighbors of given value
-    fn get_neighbors(&self, val: isize) -> [isize; 8] {
-        [
-            val + 1,
-            val - 1,
-            val - self.width as isize,
-            val - self.width as isize - 1,
-            val - self.width as isize + 1,
-            val + self.width as isize - 1,
-            val + self.width as isize,
-            val + self.width as isize + 1,
-        ]
-    }
-
-    fn get_neigh(&self, coords: &Coords) -> Vec<Coords> {
+    fn get_neighbors(&self, coords: &Coords) -> Vec<Coords> {
         let mut cells = Vec::new();
         let x = coords.x as isize;
         let y = coords.y as isize;

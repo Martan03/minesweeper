@@ -94,7 +94,13 @@ impl Game {
                     self.state = GameState::Win;
                 }
             }
-            KeyCode::Char('f') => self.board.flag(),
+            KeyCode::Char('f') => {
+                self.board.flag();
+                if self.board.win() {
+                    self.state = GameState::Win;
+                }
+            }
+            KeyCode::Char('r') => self.board.reset(),
             KeyCode::Up => self.board.cur_up(),
             KeyCode::Down => self.board.cur_down(),
             KeyCode::Left => self.board.cur_left(),

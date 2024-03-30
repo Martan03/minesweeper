@@ -17,7 +17,7 @@ fn main() {
 }
 
 fn start_game() -> Result<(), Error> {
-    let mut game = Game::new(9, 9, 10);
+    let mut game = Game::new(16, 16, 40);
 
     enable_raw_mode()?;
     _ = game.game_loop();
