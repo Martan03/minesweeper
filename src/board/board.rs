@@ -80,7 +80,7 @@ impl Board {
     /// Flags current [`Cell`]
     pub fn flag(&mut self) {
         let cell = &mut self.cells[self.cur.x + self.cur.y * self.width];
-        self.flags += cell.flag(self.flags);
+        self.flags = cell.flag(self.flags);
     }
 
     /// Returns true when game is won, else false
