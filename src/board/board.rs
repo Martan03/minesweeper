@@ -1,5 +1,8 @@
 use rand::{thread_rng, Rng};
-use termint::{geometry::constrain::Constrain, widgets::layout::Layout};
+use termint::{
+    geometry::{constrain::Constrain, coords::Coords},
+    widgets::layout::Layout,
+};
 
 use super::cell::Cell;
 
@@ -11,7 +14,7 @@ pub struct Board {
     cells: Vec<Cell>,
     mines: usize,
     generated: bool,
-    cur: (usize, usize),
+    cur: Coords,
 }
 
 impl Board {
@@ -23,7 +26,7 @@ impl Board {
             cells: vec![Cell::new(0x00); width * height],
             mines,
             generated: false,
-            cur: (0, 0),
+            cur: Coords::new(0, 0),
         }
     }
 
@@ -51,15 +54,22 @@ impl Board {
             self.generate();
         }
 
-        if self.cells[self.cur_id()].is_flag() {
+        let id = self.cur_id();
+        if self.cells[id].is_flag() {
             return true;
         }
-
-        if self.cells[self.cur_id()].is_mine() {
+        if self.cells[id].is_mine() {
             return false;
         }
 
-        self.reveal_cell(self.cur.0 as isize, self.cur.1 as isize);
+        if self.cells[id].is_visible() {
+            self.cells[id].show();
+            for cell in self.get_neigh(&self.cur) {
+                self.reveal_cell(&cell);
+            }
+        } else {
+            self.reveal_cell(&self.cur.clone());
+        }
 
         true
     }
@@ -75,28 +85,28 @@ impl Board {
 
     /// Flags current [`Cell`]
     pub fn flag(&mut self) {
-        self.cells[self.cur.0 + self.cur.1 * self.width].flag();
+        self.cells[self.cur.x + self.cur.y * self.width].flag();
     }
 
     pub fn cur_up(&mut self) {
-        self.cur.1 = self.cur.1.checked_sub(1).unwrap_or(self.height - 1);
+        self.cur.y = self.cur.y.checked_sub(1).unwrap_or(self.height - 1);
     }
 
     pub fn cur_down(&mut self) {
-        self.cur.1 += 1;
-        if self.cur.1 >= self.height {
-            self.cur.1 = 0;
+        self.cur.y += 1;
+        if self.cur.y >= self.height {
+            self.cur.y = 0;
         }
     }
 
     pub fn cur_left(&mut self) {
-        self.cur.0 = self.cur.0.checked_sub(1).unwrap_or(self.width - 1);
+        self.cur.x = self.cur.x.checked_sub(1).unwrap_or(self.width - 1);
     }
 
     pub fn cur_right(&mut self) {
-        self.cur.0 += 1;
-        if self.cur.0 >= self.height {
-            self.cur.0 = 0;
+        self.cur.x += 1;
+        if self.cur.x >= self.height {
+            self.cur.x = 0;
         }
     }
 
@@ -114,7 +124,7 @@ impl Board {
         for y in 0..self.height {
             let mut row = Layout::horizontal();
             for x in 0..self.width {
-                let cell = if self.cur.0 == x && self.cur.1 == y {
+                let cell = if self.cur.x == x && self.cur.y == y {
                     self.cells[x + y * self.width].get_element_act()
                 } else {
                     self.cells[x + y * self.width].get_element()
@@ -131,7 +141,7 @@ impl Board {
     fn generate(&mut self) {
         let mut rng = thread_rng();
 
-        let cur_id = self.cur.0 + self.cur.1 * self.width;
+        let cur_id = self.cur.x + self.cur.y * self.width;
         let cannot = self.get_neighbors(cur_id as isize);
 
         let max = self.width * self.height;
@@ -177,34 +187,23 @@ impl Board {
     }
 
     /// Reveals cell and its neighbors, when the cell value is 0
-    fn reveal_cell(&mut self, x: isize, y: isize) {
-        if !(0..self.width as isize).contains(&x)
-            || !(0..self.height as isize).contains(&y)
-        {
-            return;
-        }
-
-        let cell = &mut self.cells[x as usize + y as usize * self.width];
+    fn reveal_cell(&mut self, coords: &Coords) {
+        let cell = &mut self.cells[coords.x + coords.y * self.width];
         if cell.is_visible() {
             return;
         }
 
         cell.show();
         if cell.get() == 0x00 {
-            self.reveal_cell(x - 1, y - 1);
-            self.reveal_cell(x, y - 1);
-            self.reveal_cell(x + 1, y - 1);
-            self.reveal_cell(x - 1, y);
-            self.reveal_cell(x + 1, y);
-            self.reveal_cell(x - 1, y + 1);
-            self.reveal_cell(x, y + 1);
-            self.reveal_cell(x + 1, y + 1);
+            for n in self.get_neigh(&coords) {
+                self.reveal_cell(&n);
+            }
         }
     }
 
     /// Gets current id
     fn cur_id(&self) -> usize {
-        self.width * self.cur.1 + self.cur.0
+        self.width * self.cur.y + self.cur.x
     }
 
     /// Gets all neighbors of given value
@@ -219,5 +218,29 @@ impl Board {
             val + self.width as isize,
             val + self.width as isize + 1,
         ]
+    }
+
+    fn get_neigh(&self, coords: &Coords) -> Vec<Coords> {
+        let mut cells = Vec::new();
+        let x = coords.x as isize;
+        let y = coords.y as isize;
+
+        self.add_neighbor(&mut cells, x - 1, y - 1);
+        self.add_neighbor(&mut cells, x, y - 1);
+        self.add_neighbor(&mut cells, x + 1, y - 1);
+        self.add_neighbor(&mut cells, x - 1, y);
+        self.add_neighbor(&mut cells, x + 1, y);
+        self.add_neighbor(&mut cells, x - 1, y + 1);
+        self.add_neighbor(&mut cells, x, y + 1);
+        self.add_neighbor(&mut cells, x + 1, y + 1);
+        cells
+    }
+
+    fn add_neighbor(&self, cells: &mut Vec<Coords>, x: isize, y: isize) {
+        if (0..self.width as isize).contains(&x)
+            && (0..self.height as isize).contains(&y)
+        {
+            cells.push(Coords::new(x as usize, y as usize));
+        }
     }
 }
