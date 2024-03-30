@@ -127,7 +127,7 @@ impl Board {
 
     pub fn cur_right(&mut self) {
         self.cur.x += 1;
-        if self.cur.x >= self.height {
+        if self.cur.x >= self.width {
             self.cur.x = 0;
         }
     }
