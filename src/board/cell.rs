@@ -56,7 +56,7 @@ impl Cell {
         if self.cell_type == CellType::Flag {
             self.cell_type = CellType::Hidden;
             return flags - 1;
-        } else if self.cell_type != CellType::Visible {
+        } else if self.cell_type == CellType::Hidden {
             self.cell_type = CellType::Flag;
             return flags + 1;
         }

@@ -36,11 +36,19 @@ impl Board {
 
     /// Gets [`Board`] as termint Layout element
     pub fn get_element(&self) -> Layout {
-        let mut layout = Layout::horizontal().center();
-        layout.add_child(
-            self.get_cells_layout(),
-            Constrain::Length(5 * self.width),
-        );
+        let mut layout = Layout::vertical();
+        for y in 0..self.height {
+            let mut row = Layout::horizontal();
+            for x in 0..self.width {
+                let cell = if self.cur.x == x && self.cur.y == y {
+                    self.cells[x + y * self.width].get_element_act()
+                } else {
+                    self.cells[x + y * self.width].get_element()
+                };
+                row.add_child(cell, Constrain::Length(5));
+            }
+            layout.add_child(row, Constrain::Length(3));
+        }
         layout
     }
 
@@ -79,8 +87,8 @@ impl Board {
 
     /// Flags current [`Cell`]
     pub fn flag(&mut self) {
-        let cell = &mut self.cells[self.cur.x + self.cur.y * self.width];
-        self.flags = cell.flag(self.flags);
+        self.flags =
+            self.cells[self.cur.x + self.cur.y * self.width].flag(self.flags);
     }
 
     /// Returns true when game is won, else false
@@ -95,6 +103,11 @@ impl Board {
         self.generated = false;
         self.rev = 0;
         self.flags = 0;
+    }
+
+    /// Gets flags left
+    pub fn flags_left(&self) -> isize {
+        self.mines as isize - self.flags as isize
     }
 
     pub fn cur_up(&mut self) {
@@ -122,24 +135,6 @@ impl Board {
 
 // Private methods implementations
 impl Board {
-    fn get_cells_layout(&self) -> Layout {
-        let mut layout = Layout::vertical();
-        for y in 0..self.height {
-            let mut row = Layout::horizontal();
-            for x in 0..self.width {
-                let cell = if self.cur.x == x && self.cur.y == y {
-                    self.cells[x + y * self.width].get_element_act()
-                } else {
-                    self.cells[x + y * self.width].get_element()
-                };
-                row.add_child(cell, Constrain::Length(5));
-            }
-            layout.add_child(row, Constrain::Length(3));
-        }
-
-        layout
-    }
-
     /// Generates the [`Board`] - fills it with mines
     fn generate(&mut self) {
         let mut rng = thread_rng();

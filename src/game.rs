@@ -4,7 +4,7 @@ use crossterm::event::{poll, read, Event, KeyCode, KeyEvent};
 use termint::{
     geometry::{constrain::Constrain, direction::Direction},
     term::Term,
-    widgets::{block::Block, spacer::Spacer},
+    widgets::{block::Block, layout::Layout, spacer::Spacer, span::Span},
 };
 
 use crate::{board::board::Board, error::Error, game_state::GameState};
@@ -38,26 +38,40 @@ impl Game {
 
 // Private methods implementations
 impl Game {
+    /// Renders game
     fn render(&self) {
         print!("\x1b[H\x1b[J");
-        let mut block = Block::new()
-            .title("Minesweeper")
-            .direction(Direction::Vertical)
-            .center();
+        let mut layout = Layout::vertical().center();
 
-        if self.state == GameState::Win {
-            block.add_child("Victory!", Constrain::Length(1));
-        } else {
-            block.add_child(Spacer::new(), Constrain::Length(1))
-        }
-
-        block.add_child(
+        layout.add_child(self.render_stats(), Constrain::Length(1));
+        layout.add_child(
             self.board.get_element(),
             Constrain::Length(self.board.height * 3),
         );
 
+        let mut block = Block::new()
+            .title("Minesweeper")
+            .center()
+            .direction(Direction::Horizontal);
+        block.add_child(layout, Constrain::Length(self.board.width * 5));
+
         let term = Term::new();
         _ = term.render(block);
+    }
+
+    /// Renders stats
+    fn render_stats(&self) -> Layout {
+        let mut layout = Layout::horizontal();
+        layout.add_child(
+            Span::new(self.board.flags_left().to_string()),
+            Constrain::Min(0),
+        );
+        layout.add_child(Spacer::new(), Constrain::Fill);
+
+        if self.state == GameState::Win {
+            layout.add_child("Victory!", Constrain::Min(0));
+        }
+        layout
     }
 
     fn key_listener(&mut self) -> Result<(), Error> {
