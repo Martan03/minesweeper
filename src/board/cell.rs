@@ -52,12 +52,15 @@ impl Cell {
     }
 
     /// Sets [`Cell`] as flag (if possible)
-    pub fn flag(&mut self) {
+    pub fn flag(&mut self, flags: usize) -> usize {
         if self.cell_type == CellType::Flag {
             self.cell_type = CellType::Hidden;
+            return flags - 1;
         } else if self.cell_type != CellType::Visible {
             self.cell_type = CellType::Flag;
+            return flags + 1;
         }
+        flags
     }
 
     /// Gets [`Cell`] termint element

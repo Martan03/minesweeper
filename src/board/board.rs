@@ -15,6 +15,8 @@ pub struct Board {
     mines: usize,
     generated: bool,
     cur: Coords,
+    rev: usize,
+    flags: usize,
 }
 
 impl Board {
@@ -27,6 +29,8 @@ impl Board {
             mines,
             generated: false,
             cur: Coords::new(0, 0),
+            rev: 0,
+            flags: 0,
         }
     }
 
@@ -40,14 +44,7 @@ impl Board {
         layout
     }
 
-    /// Changes the size of the [`Board`]
-    pub fn resize(&mut self, width: usize, height: usize) {
-        self.width = width;
-        self.height = height;
-        self.cells = vec![Cell::new(0x00); width * height];
-    }
-
-    /// Reveals current cell and its neighbors when 0
+    /// Reveals current [`Cell`] and its neighbors when 0
     pub fn reveal(&mut self) -> bool {
         if !self.generated {
             self.generated = true;
@@ -63,10 +60,7 @@ impl Board {
         }
 
         if self.cells[id].is_visible() {
-            self.cells[id].show();
-            for cell in self.get_neigh(&self.cur) {
-                self.reveal_cell(&cell);
-            }
+            return self.reveal_vis();
         } else {
             self.reveal_cell(&self.cur.clone());
         }
@@ -85,7 +79,22 @@ impl Board {
 
     /// Flags current [`Cell`]
     pub fn flag(&mut self) {
-        self.cells[self.cur.x + self.cur.y * self.width].flag();
+        let cell = &mut self.cells[self.cur.x + self.cur.y * self.width];
+        self.flags += cell.flag(self.flags);
+    }
+
+    /// Returns true when game is won, else false
+    pub fn win(&self) -> bool {
+        return self.rev + self.flags == self.width * self.height
+            && self.mines == self.flags;
+    }
+
+    /// Resets the [`Board`]
+    pub fn reset(&mut self) {
+        self.cells = vec![Cell::new(0); self.width * self.height];
+        self.generated = false;
+        self.rev = 0;
+        self.flags = 0;
     }
 
     pub fn cur_up(&mut self) {
@@ -108,12 +117,6 @@ impl Board {
         if self.cur.x >= self.height {
             self.cur.x = 0;
         }
-    }
-
-    /// Resets the [`Board`]
-    pub fn reset(&mut self) {
-        self.cells = vec![Cell::new(0); self.width * self.height];
-        self.generated = false;
     }
 }
 
@@ -194,11 +197,29 @@ impl Board {
         }
 
         cell.show();
+        self.rev += 1;
         if cell.get() == 0x00 {
             for n in self.get_neigh(&coords) {
                 self.reveal_cell(&n);
             }
         }
+    }
+
+    /// Reveals neighbors of visible cell
+    fn reveal_vis(&mut self) -> bool {
+        let mut ret = true;
+        for n in self.get_neigh(&self.cur) {
+            let cell = &mut self.cells[n.x + n.y * self.width];
+            if cell.is_flag() {
+                continue;
+            }
+            if cell.is_mine() {
+                ret = false;
+            } else {
+                self.reveal_cell(&n);
+            }
+        }
+        ret
     }
 
     /// Gets current id

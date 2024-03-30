@@ -5,6 +5,7 @@ use game::Game;
 mod board;
 mod error;
 mod game;
+mod game_state;
 mod tui;
 
 fn main() {
