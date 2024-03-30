@@ -80,7 +80,7 @@ impl Game {
     fn over_key_listener(&mut self, code: KeyCode) -> Result<(), Error> {
         match code {
             KeyCode::Esc => return Err(Error::ExitErr),
-            KeyCode::Char('R') => {
+            KeyCode::Char('r') => {
                 self.board.reset();
                 self.game_over = false;
             }

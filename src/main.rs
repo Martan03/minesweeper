@@ -5,6 +5,7 @@ use game::Game;
 mod board;
 mod error;
 mod game;
+mod tui;
 
 fn main() {
     // Saves screen, clears screen and hides cursor

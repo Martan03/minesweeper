@@ -1,12 +1,10 @@
 use termint::{
-    enums::{fg::Fg, wrap::Wrap},
+    enums::fg::Fg,
     geometry::{constrain::Constrain, direction::Direction},
-    widgets::{
-        block::Block,
-        border::BorderType,
-        span::{Span, StrSpanExtension},
-    },
+    widgets::{block::Block, border::BorderType},
 };
+
+use crate::tui::raw_span::RawSpan;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum CellType {
@@ -74,8 +72,9 @@ impl Cell {
                 block = block.border_color(Fg::Default);
                 block.add_child(self.get_element_vis(), Constrain::Min(0))
             }
-            // 🚩
-            CellType::Flag => block.add_child("F", Constrain::Min(0)),
+            CellType::Flag => {
+                block.add_child(RawSpan::new("🚩"), Constrain::Min(0))
+            }
         }
         block
     }
@@ -93,7 +92,9 @@ impl Cell {
                 block = block.border_color(Fg::Default);
                 block.add_child(self.get_element_vis(), Constrain::Min(0))
             }
-            CellType::Flag => block.add_child("F", Constrain::Min(0)),
+            CellType::Flag => {
+                block.add_child(RawSpan::new("🚩"), Constrain::Min(0))
+            }
         }
         block
     }
@@ -115,19 +116,18 @@ impl Cell {
 }
 
 impl Cell {
-    pub fn get_element_vis(&self) -> Span {
+    pub fn get_element_vis(&self) -> RawSpan {
         match self.value {
-            0x01 => "1".fg(Fg::RGB(4, 59, 239)),
-            0x02 => "2".fg(Fg::RGB(32, 145, 4)),
-            0x03 => "3".fg(Fg::RGB(252, 25, 29)),
-            0x04 => "4".fg(Fg::RGB(0, 6, 124)),
-            0x05 => "5".fg(Fg::RGB(140, 4, 6)),
-            0x06 => "6".fg(Fg::RGB(13, 125, 153)),
-            0x07 => "7".fg(Fg::RGB(0, 0, 0)),
-            0x08 => "8".fg(Fg::RGB(180, 180, 180)),
-            // 💣
-            0xff => "F".fg(Fg::Red).wrap(Wrap::Letter),
-            _ => "".to_span(),
+            0x01 => RawSpan::new("1").fg(Fg::RGB(4, 59, 239)),
+            0x02 => RawSpan::new("2").fg(Fg::RGB(32, 145, 4)),
+            0x03 => RawSpan::new("3").fg(Fg::RGB(252, 25, 29)),
+            0x04 => RawSpan::new("4").fg(Fg::RGB(0, 6, 124)),
+            0x05 => RawSpan::new("5").fg(Fg::RGB(140, 4, 6)),
+            0x06 => RawSpan::new("6").fg(Fg::RGB(13, 125, 153)),
+            0x07 => RawSpan::new("7").fg(Fg::RGB(0, 0, 0)),
+            0x08 => RawSpan::new("8").fg(Fg::RGB(180, 180, 180)),
+            0xff => RawSpan::new("💣"),
+            _ => RawSpan::new(""),
         }
     }
 }
