@@ -40,11 +40,8 @@ impl Board {
         for y in 0..self.height {
             let mut row = Layout::horizontal();
             for x in 0..self.width {
-                let cell = if self.cur.x == x && self.cur.y == y {
-                    self.cells[x + y * self.width].get_element_act()
-                } else {
-                    self.cells[x + y * self.width].get_element()
-                };
+                let cell = self.cells[self.get_id(x, y)]
+                    .get_element(self.cur.x == x && self.cur.y == y);
                 row.add_child(cell, Constrain::Length(5));
             }
             layout.add_child(row, Constrain::Length(3));
@@ -55,11 +52,10 @@ impl Board {
     /// Reveals current [`Cell`] and its neighbors when 0
     pub fn reveal(&mut self) -> bool {
         if !self.generated {
-            self.generated = true;
             self.generate();
         }
 
-        let id = self.cur_id();
+        let id = self.get_id(self.cur.x, self.cur.y);
         if self.cells[id].is_flag() {
             return true;
         }
@@ -87,8 +83,8 @@ impl Board {
 
     /// Flags current [`Cell`]
     pub fn flag(&mut self) {
-        self.flags =
-            self.cells[self.cur.x + self.cur.y * self.width].flag(self.flags);
+        let id = self.get_id(self.cur.x, self.cur.y);
+        self.flags = self.cells[id].flag(self.flags);
     }
 
     /// Returns true when game is won, else false
@@ -137,6 +133,7 @@ impl Board {
 impl Board {
     /// Generates the [`Board`] - fills it with mines
     fn generate(&mut self) {
+        self.generated = true;
         let mut rng = thread_rng();
 
         let cannot = self.get_neighbors(&self.cur);
@@ -145,7 +142,7 @@ impl Board {
             let mut x = rng.gen_range(0..self.width);
             let mut y = rng.gen_range(0..self.height);
 
-            let mut id = x + y * self.width;
+            let mut id = self.get_id(x, y);
             while self.cells[id].get() == 0xff
                 || cannot.contains(&Coords::new(x, y))
                 || x == self.cur.x
@@ -153,7 +150,7 @@ impl Board {
             {
                 x = rng.gen_range(0..self.width);
                 y = rng.gen_range(0..self.height);
-                id = x + y * self.width;
+                id = self.get_id(x, y);
             }
 
             self.cells[id].set(0xff);
@@ -221,9 +218,9 @@ impl Board {
         ret
     }
 
-    /// Gets current id
-    fn cur_id(&self) -> usize {
-        self.width * self.cur.y + self.cur.x
+    /// Gets cell id from given coords
+    fn get_id(&self, x: usize, y: usize) -> usize {
+        self.width * y + x
     }
 
     fn get_neighbors(&self, coords: &Coords) -> Vec<Coords> {

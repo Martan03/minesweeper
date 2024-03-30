@@ -2,9 +2,17 @@ use std::time::Duration;
 
 use crossterm::event::{poll, read, Event, KeyCode, KeyEvent};
 use termint::{
-    geometry::{constrain::Constrain, direction::Direction},
+    enums::modifier::Modifier,
+    geometry::{
+        constrain::Constrain, direction::Direction, text_align::TextAlign,
+    },
     term::Term,
-    widgets::{block::Block, layout::Layout, spacer::Spacer, span::Span},
+    widgets::{
+        block::Block,
+        layout::Layout,
+        spacer::Spacer,
+        span::{Span, StrSpanExtension},
+    },
 };
 
 use crate::{board::board::Board, error::Error, game_state::GameState};
@@ -41,13 +49,15 @@ impl Game {
     /// Renders game
     fn render(&self) {
         print!("\x1b[H\x1b[J");
-        let mut layout = Layout::vertical().center();
-
-        layout.add_child(self.render_stats(), Constrain::Length(1));
-        layout.add_child(
-            self.board.get_element(),
-            Constrain::Length(self.board.height * 3),
-        );
+        let layout = match Term::get_size() {
+            Some((w, h))
+                if self.board.width * 5 + 2 >= w
+                    || self.board.height * 3 + 2 >= h =>
+            {
+                self.render_small_msg()
+            }
+            _ => self.render_game(),
+        };
 
         let mut block = Block::new()
             .title("Minesweeper")
@@ -59,9 +69,35 @@ impl Game {
         _ = term.render(block);
     }
 
+    fn render_game(&self) -> Layout {
+        let mut layout = Layout::vertical().center();
+        layout.add_child(self.render_stats(), Constrain::Length(1));
+        layout.add_child(
+            self.board.get_element(),
+            Constrain::Length(self.board.height * 3),
+        );
+        layout
+    }
+
+    fn render_small_msg(&self) -> Layout {
+        let mut layout = Layout::vertical().center();
+        layout.add_child(
+            "Terminal too small!"
+                .modifier(vec![Modifier::Bold])
+                .align(TextAlign::Center),
+            Constrain::Min(0),
+        );
+        layout.add_child(
+            "Resize your terminal or start smaller game"
+                .align(TextAlign::Center),
+            Constrain::Min(0),
+        );
+        layout
+    }
+
     /// Renders stats
     fn render_stats(&self) -> Layout {
-        let mut layout = Layout::horizontal();
+        let mut layout = Layout::horizontal().padding((0, 1));
         layout.add_child(
             Span::new(self.board.flags_left().to_string()),
             Constrain::Min(0),

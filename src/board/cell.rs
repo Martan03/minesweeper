@@ -6,6 +6,7 @@ use termint::{
 
 use crate::tui::raw_span::RawSpan;
 
+/// Enum representing cell type
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum CellType {
     Hidden,
@@ -51,7 +52,7 @@ impl Cell {
         }
     }
 
-    /// Sets [`Cell`] as flag (if possible)
+    /// Toggles [`Cell`] as flag (if possible)
     pub fn flag(&mut self, flags: usize) -> usize {
         if self.cell_type == CellType::Flag {
             self.cell_type = CellType::Hidden;
@@ -64,36 +65,12 @@ impl Cell {
     }
 
     /// Gets [`Cell`] termint element
-    pub fn get_element(&self) -> Block {
+    pub fn get_element(&self, active: bool) -> Block {
         let mut block = Block::new().direction(Direction::Horizontal).center();
-        match self.cell_type {
-            CellType::Hidden => block = block.border_color(Fg::Gray),
-            CellType::Visible => {
-                block.add_child(self.get_element_vis(), Constrain::Min(0))
-            }
-            CellType::Flag => {
-                block.add_child(RawSpan::new("🚩"), Constrain::Min(0))
-            }
+        if active {
+            block = block.border_type(BorderType::Thicker);
         }
-        block
-    }
-
-    /// Gets [`Cell`] as active termint element
-    pub fn get_element_act(&self) -> Block {
-        let mut block = Block::new()
-            .direction(Direction::Horizontal)
-            .border_type(BorderType::Thicker)
-            .center();
-        match self.cell_type {
-            CellType::Hidden => block = block.border_color(Fg::Gray),
-            CellType::Visible => {
-                block.add_child(self.get_element_vis(), Constrain::Min(0))
-            }
-            CellType::Flag => {
-                block.add_child(RawSpan::new("🚩"), Constrain::Min(0))
-            }
-        }
-        block
+        self.cell_value(block)
     }
 
     /// Checks whether cell is mine
@@ -113,7 +90,22 @@ impl Cell {
 }
 
 impl Cell {
-    pub fn get_element_vis(&self) -> RawSpan {
+    /// Fills block with cell value element
+    fn cell_value(&self, mut block: Block) -> Block {
+        match self.cell_type {
+            CellType::Hidden => block = block.border_color(Fg::Gray),
+            CellType::Visible => {
+                block.add_child(self.cell_vis_value(), Constrain::Min(0))
+            }
+            CellType::Flag => {
+                block.add_child(RawSpan::new("🚩"), Constrain::Min(0))
+            }
+        }
+        block
+    }
+
+    /// Gets visible cell value element
+    fn cell_vis_value(&self) -> RawSpan {
         match self.value {
             0x01 => RawSpan::new("1").fg(Fg::RGB(4, 59, 239)),
             0x02 => RawSpan::new("2").fg(Fg::RGB(32, 145, 4)),
