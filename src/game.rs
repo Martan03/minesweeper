@@ -15,13 +15,19 @@ use termint::{
     },
 };
 
-use crate::{board::board::Board, error::Error, game_state::GameState};
+use crate::{
+    board::board::Board,
+    error::Error,
+    game_state::{GameScreen, GameState},
+    tui::raw_span::RawSpan,
+};
 
 /// Struct containing game info and implementing the game loop
 #[derive(Debug, Clone)]
 pub struct Game {
     board: Board,
     state: GameState,
+    pub screen: GameScreen,
 }
 
 impl Game {
@@ -30,6 +36,7 @@ impl Game {
         Self {
             board: Board::new(width, height, mines),
             state: GameState::Playing,
+            screen: GameScreen::Game,
         }
     }
 
@@ -46,8 +53,15 @@ impl Game {
 
 // Private methods implementations
 impl Game {
-    /// Renders game
     fn render(&self) {
+        match self.screen {
+            GameScreen::Game => self.render_g(),
+            GameScreen::Help => self.render_help(),
+        }
+    }
+
+    /// Renders game
+    fn render_g(&self) {
         print!("\x1b[H\x1b[J");
         let layout = match Term::get_size() {
             Some((w, h))
@@ -76,6 +90,8 @@ impl Game {
             self.board.get_element(),
             Constrain::Length(self.board.height * 3),
         );
+        layout
+            .add_child(RawSpan::new(" 🛈 Press i for help"), Constrain::Min(0));
         layout
     }
 
@@ -137,6 +153,7 @@ impl Game {
                 }
             }
             KeyCode::Char('r') => self.board.reset(),
+            KeyCode::Char('i') => self.screen = GameScreen::Help,
             KeyCode::Up => self.board.cur_up(),
             KeyCode::Down => self.board.cur_down(),
             KeyCode::Left => self.board.cur_left(),
