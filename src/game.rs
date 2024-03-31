@@ -9,6 +9,7 @@ use termint::{
     term::Term,
     widgets::{
         block::Block,
+        border::BorderType,
         layout::Layout,
         spacer::Spacer,
         span::{Span, StrSpanExtension},
@@ -88,8 +89,9 @@ impl Game {
 
         let mut block = Block::new()
             .title("Minesweeper")
-            .center()
-            .direction(Direction::Horizontal);
+            .border_type(BorderType::Thicker)
+            .direction(Direction::Horizontal)
+            .center();
         block.add_child(layout, Constrain::Length(self.board.width * 5));
 
         let term = Term::new();

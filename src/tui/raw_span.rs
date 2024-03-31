@@ -1,5 +1,5 @@
 use termint::{
-    enums::{cursor::Cursor, fg::Fg},
+    enums::{bg::Bg, cursor::Cursor, fg::Fg},
     geometry::coords::Coords,
     widgets::widget::Widget,
 };
@@ -12,6 +12,7 @@ use termint::{
 pub struct RawSpan {
     text: String,
     fg: Fg,
+    bg: Option<Bg>,
 }
 
 impl RawSpan {
@@ -20,6 +21,7 @@ impl RawSpan {
         Self {
             text: text.as_ref().to_string(),
             fg: Default::default(),
+            bg: None,
         }
     }
 
@@ -28,11 +30,25 @@ impl RawSpan {
         self.fg = fg;
         self
     }
+
+    /// Sets background color of [`RawSpan`]
+    pub fn bg<T: Into<Option<Bg>>>(mut self, bg: T) -> Self {
+        self.bg = bg.into();
+        self
+    }
 }
 
 impl Widget for RawSpan {
     fn render(&self, pos: &Coords, _size: &Coords) {
-        print!("{}{}{}", Cursor::Pos(pos.x, pos.y), self.fg, self.text);
+        if let Some(bg) = self.bg {
+            print!("{}", bg);
+        }
+        print!(
+            "{}{}{}\x1b[0m",
+            Cursor::Pos(pos.x, pos.y),
+            self.fg,
+            self.text
+        );
     }
 
     fn height(&self, _size: &Coords) -> usize {
