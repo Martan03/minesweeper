@@ -1,2 +1,4 @@
 pub mod help;
-pub mod raw_span;
+pub mod widgets;
+
+pub use widgets::raw_span;
