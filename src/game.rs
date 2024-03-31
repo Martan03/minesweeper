@@ -53,16 +53,29 @@ impl Game {
 
 // Private methods implementations
 impl Game {
-    fn render(&self) {
+    /// Renders the game
+    pub fn render(&self) {
+        print!("\x1b[H\x1b[J");
         match self.screen {
-            GameScreen::Game => self.render_g(),
+            GameScreen::Game => self.render_game(),
             GameScreen::Help => self.render_help(),
         }
     }
 
+    /// Listens to key presses
+    fn key_listener(&mut self) -> Result<(), Error> {
+        let Event::Key(KeyEvent { code, .. }) = read()? else {
+            return Ok(());
+        };
+
+        match self.screen {
+            GameScreen::Game => self.game_key_listen(code),
+            GameScreen::Help => self.help_key_listen(code),
+        }
+    }
+
     /// Renders game
-    fn render_g(&self) {
-        print!("\x1b[H\x1b[J");
+    fn render_game(&self) {
         let layout = match Term::get_size() {
             Some((w, h))
                 if self.board.width * 5 + 2 >= w
@@ -70,7 +83,7 @@ impl Game {
             {
                 self.render_small_msg()
             }
-            _ => self.render_game(),
+            _ => self.game_layout(),
         };
 
         let mut block = Block::new()
@@ -83,7 +96,7 @@ impl Game {
         _ = term.render(block);
     }
 
-    fn render_game(&self) -> Layout {
+    fn game_layout(&self) -> Layout {
         let mut layout = Layout::vertical().center();
         layout.add_child(self.render_stats(), Constrain::Length(1));
         layout.add_child(
@@ -126,13 +139,9 @@ impl Game {
         layout
     }
 
-    fn key_listener(&mut self) -> Result<(), Error> {
-        let Event::Key(KeyEvent { code, .. }) = read()? else {
-            return Ok(());
-        };
-
+    fn game_key_listen(&mut self, code: KeyCode) -> Result<(), Error> {
         if self.state != GameState::Playing {
-            return self.over_key_listener(code);
+            return self.over_key_listen(code);
         }
 
         match code {
@@ -160,13 +169,12 @@ impl Game {
             KeyCode::Right => self.board.cur_right(),
             _ => return Ok(()),
         }
-
         self.render();
         Ok(())
     }
 
     /// Game over key listener
-    fn over_key_listener(&mut self, code: KeyCode) -> Result<(), Error> {
+    fn over_key_listen(&mut self, code: KeyCode) -> Result<(), Error> {
         match code {
             KeyCode::Esc => return Err(Error::ExitErr),
             KeyCode::Char('r') => {
