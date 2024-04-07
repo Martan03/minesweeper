@@ -183,6 +183,7 @@ impl Game {
                 self.board.reset();
                 self.state = GameState::Playing;
             }
+            KeyCode::Char('i') => self.screen = GameScreen::Help,
             _ => return Ok(()),
         }
 
