@@ -187,7 +187,7 @@ impl Board {
     /// Reveals cell and its neighbors, when the cell value is 0
     fn reveal_cell(&mut self, coords: &Coords) {
         let cell = &mut self.cells[coords.x + coords.y * self.width];
-        if cell.is_visible() {
+        if cell.is_visible() || cell.is_flag() {
             return;
         }
 
