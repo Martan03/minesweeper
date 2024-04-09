@@ -35,13 +35,13 @@ impl Board {
     }
 
     /// Gets [`Board`] as termint Layout element
-    pub fn get_element(&self) -> Layout {
+    pub fn get_element(&self, over: bool) -> Layout {
         let mut layout = Layout::vertical();
         for y in 0..self.height {
             let mut row = Layout::horizontal();
             for x in 0..self.width {
                 let cell = self.cells[self.get_id(x, y)]
-                    .get_element(self.cur.x == x && self.cur.y == y);
+                    .get_element(self.cur.x == x && self.cur.y == y, over);
                 row.add_child(cell, Constrain::Length(5));
             }
             layout.add_child(row, Constrain::Length(3));

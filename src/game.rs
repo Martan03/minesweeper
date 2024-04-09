@@ -102,7 +102,7 @@ impl Game {
         let mut layout = Layout::vertical().center();
         layout.add_child(self.render_stats(), Constrain::Length(1));
         layout.add_child(
-            self.board.get_element(),
+            self.board.get_element(self.state == GameState::GameOver),
             Constrain::Length(self.board.height * 3),
         );
         layout

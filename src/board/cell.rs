@@ -65,12 +65,12 @@ impl Cell {
     }
 
     /// Gets [`Cell`] termint element
-    pub fn get_element(&self, active: bool) -> Block {
+    pub fn get_element(&self, active: bool, over: bool) -> Block {
         let mut block = Block::new().direction(Direction::Horizontal).center();
         if active {
             block = block.border_type(BorderType::Thicker);
         }
-        self.cell_value(block)
+        self.cell_value(block, over)
     }
 
     /// Checks whether cell is mine
@@ -91,15 +91,21 @@ impl Cell {
 
 impl Cell {
     /// Fills block with cell value element
-    fn cell_value(&self, mut block: Block) -> Block {
+    fn cell_value(&self, mut block: Block, end: bool) -> Block {
         match self.cell_type {
-            CellType::Hidden => block = block.border_color(Fg::Gray),
+            CellType::Hidden => {
+                block = block.border_color(Fg::Gray);
+                return block;
+            }
             CellType::Visible => {
-                block.add_child(self.cell_vis_value(), Constrain::Min(0))
+                block.add_child(self.cell_vis_value(), Constrain::Min(0));
             }
             CellType::Flag => {
                 block.add_child(RawSpan::new("🚩"), Constrain::Min(0))
             }
+        }
+        if end && self.value == 0xff {
+            block = block.border_color(Fg::Red);
         }
         block
     }
