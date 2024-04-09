@@ -136,7 +136,8 @@ impl Board {
         self.generated = true;
         let mut rng = thread_rng();
 
-        let cannot = self.get_neighbors(&self.cur);
+        let mut cannot = self.get_neighbors(&self.cur);
+        cannot.push(Coords::new(self.cur.x, self.cur.y));
 
         for _ in 0..self.mines {
             let mut x = rng.gen_range(0..self.width);
@@ -145,8 +146,6 @@ impl Board {
             let mut id = self.get_id(x, y);
             while self.cells[id].get() == 0xff
                 || cannot.contains(&Coords::new(x, y))
-                || x == self.cur.x
-                || y == self.cur.y
             {
                 x = rng.gen_range(0..self.width);
                 y = rng.gen_range(0..self.height);
