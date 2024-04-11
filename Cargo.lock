@@ -227,9 +227,9 @@ dependencies = [
 
 [[package]]
 name = "termint"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2f131029769a385dac1dd3e6841a1ad8ce89c97402d94b1c8e77abbec85e8f7"
+checksum = "81748d0f436960ff468feebebcea6e4dc3095336d84efd1ec9d30339d6eb0381"
 dependencies = [
  "term_size",
 ]

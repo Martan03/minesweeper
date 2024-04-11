@@ -2,9 +2,10 @@ use std::time::Duration;
 
 use crossterm::event::{poll, read, Event, KeyCode, KeyEvent};
 use termint::{
-    enums::modifier::Modifier,
+    enums::{modifier::Modifier, wrap::Wrap},
     geometry::{
-        constrain::Constrain, direction::Direction, text_align::TextAlign,
+        constrain::Constrain, coords::Coords, direction::Direction,
+        text_align::TextAlign,
     },
     term::Term,
     widgets::{
@@ -13,6 +14,7 @@ use termint::{
         layout::Layout,
         spacer::Spacer,
         span::{Span, StrSpanExtension},
+        widget::Widget,
     },
 };
 
@@ -29,6 +31,7 @@ pub struct Game {
     board: Board,
     state: GameState,
     pub screen: GameScreen,
+    size: (usize, usize),
 }
 
 impl Game {
@@ -38,6 +41,7 @@ impl Game {
             board: Board::new(width, height, mines),
             state: GameState::Playing,
             screen: GameScreen::Game,
+            size: Term::get_size().unwrap_or((0, 0)),
         }
     }
 
@@ -46,6 +50,13 @@ impl Game {
         self.render();
         loop {
             if poll(Duration::from_millis(100))? {
+                if let Some(size) = Term::get_size() {
+                    if size != self.size {
+                        self.size = size;
+                        print!("\x1b[H\x1b[J");
+                        self.render();
+                    }
+                }
                 self.key_listener()?;
             }
         }
@@ -56,7 +67,6 @@ impl Game {
 impl Game {
     /// Renders the game
     pub fn render(&self) {
-        print!("\x1b[H\x1b[J");
         match self.screen {
             GameScreen::Game => self.render_game(),
             GameScreen::Help => self.render_help(),
@@ -94,8 +104,11 @@ impl Game {
             .center();
         block.add_child(layout, Constrain::Length(self.board.width * 5));
 
-        let term = Term::new();
-        _ = term.render(block);
+        // print!("\x1b[H\x1b[J");
+        block.render(
+            &Coords::new(1, 1),
+            &Coords::new(self.size.0, self.size.1),
+        );
     }
 
     fn game_layout(&self) -> Layout {
@@ -129,14 +142,18 @@ impl Game {
     /// Renders stats
     fn render_stats(&self) -> Layout {
         let mut layout = Layout::horizontal().padding((0, 1));
+        let sw = self.board.mines.to_string().len();
         layout.add_child(
-            Span::new(self.board.flags_left().to_string()),
+            Span::new(format!("{:<sw$}", self.board.flags_left().to_string()))
+                .wrap(Wrap::Letter),
             Constrain::Min(0),
         );
         layout.add_child(Spacer::new(), Constrain::Fill);
 
         if self.state == GameState::Win {
             layout.add_child("Victory!", Constrain::Min(0));
+        } else {
+            layout.add_child("        ".wrap(Wrap::Letter), Constrain::Min(0));
         }
         layout
     }

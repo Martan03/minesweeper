@@ -94,6 +94,7 @@ impl Cell {
     fn cell_value(&self, mut block: Block, end: bool) -> Block {
         match self.cell_type {
             CellType::Hidden => {
+                block.add_child(RawSpan::new(" "), Constrain::Min(0));
                 block = block.border_color(Fg::Gray);
                 return block;
             }
@@ -122,7 +123,7 @@ impl Cell {
             0x07 => RawSpan::new("7").fg(Fg::RGB(0, 0, 0)),
             0x08 => RawSpan::new("8").fg(Fg::RGB(180, 180, 180)),
             0xff => RawSpan::new("💣"),
-            _ => RawSpan::new(""),
+            _ => RawSpan::new(" "),
         }
     }
 }

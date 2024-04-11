@@ -12,7 +12,7 @@ pub struct Board {
     pub width: usize,
     pub height: usize,
     cells: Vec<Cell>,
-    mines: usize,
+    pub mines: usize,
     generated: bool,
     cur: Coords,
     rev: usize,

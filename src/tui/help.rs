@@ -50,6 +50,8 @@ impl Game {
         );
 
         block.add_child(layout, Constrain::Length(29));
+
+        print!("\x1b[H\x1b[J");
         let term = Term::new();
         _ = term.render(block);
     }
@@ -58,7 +60,10 @@ impl Game {
     pub fn help_key_listen(&mut self, code: KeyCode) -> Result<(), Error> {
         match code {
             KeyCode::Esc => return Err(Error::ExitErr),
-            KeyCode::Char('i') => self.screen = GameScreen::Game,
+            KeyCode::Char('i') => {
+                print!("\x1b[H\x1b[J");
+                self.screen = GameScreen::Game
+            }
             _ => {}
         }
         self.render();

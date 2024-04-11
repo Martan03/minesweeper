@@ -39,16 +39,18 @@ impl RawSpan {
 }
 
 impl Widget for RawSpan {
-    fn render(&self, pos: &Coords, _size: &Coords) {
-        if let Some(bg) = self.bg {
-            print!("{}", bg);
-        }
-        print!(
-            "{}{}{}\x1b[0m",
+    fn render(&self, pos: &Coords, size: &Coords) {
+        print!("{}", self.get_string(pos, size));
+    }
+
+    fn get_string(&self, pos: &Coords, _size: &Coords) -> String {
+        format!(
+            "{}{}{}{}\x1b[0m",
+            self.bg.map(|v| v.to_string()).unwrap_or("".to_string()),
             Cursor::Pos(pos.x, pos.y),
             self.fg,
-            self.text
-        );
+            self.text,
+        )
     }
 
     fn height(&self, _size: &Coords) -> usize {

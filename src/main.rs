@@ -1,3 +1,5 @@
+use std::io::{stdout, Write};
+
 use args::Difficulty;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use error::Error;
@@ -19,10 +21,12 @@ fn main() -> Result<(), String> {
     }
 
     // Saves screen, clears screen and hides cursor
-    println!("\x1b[?1049h\x1b[2J\x1b[?25l");
+    print!("\x1b[?1049h\x1b[2J\x1b[?25l");
+    _ = stdout().flush();
     _ = start_game(args);
     // Restores screen
-    println!("\x1b[?1049l\x1b[?25h");
+    print!("\x1b[?1049l\x1b[?25h");
+    _ = stdout().flush();
     Ok(())
 }
 
@@ -35,6 +39,6 @@ fn start_game(args: Args) -> Result<(), Error> {
     };
 
     enable_raw_mode()?;
-    _ = game.game_loop();
+    game.game_loop()?;
     Ok(disable_raw_mode()?)
 }
