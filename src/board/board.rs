@@ -55,6 +55,8 @@ impl Board {
     }
 
     /// Reveals current [`Cell`] and its neighbors when 0
+    /// ### Returns
+    /// false when explodes, otheewise true
     pub fn reveal(&mut self) -> bool {
         if !self.generated {
             self.generate();
@@ -65,6 +67,7 @@ impl Board {
             return true;
         }
         if self.cells[id].is_mine() {
+            self.cells[id].set_wrong();
             return false;
         }
 
@@ -79,9 +82,12 @@ impl Board {
 
     /// Reveals all mines
     pub fn reveal_mines(&mut self) {
-        for i in 0..self.cells.len() {
-            if self.cells[i].is_mine() {
-                self.cells[i].show();
+        for c in &mut self.cells {
+            if c.is_mine() {
+                c.show();
+            }
+            if !c.is_mine() && c.is_flag() {
+                c.set_wrong();
             }
         }
     }

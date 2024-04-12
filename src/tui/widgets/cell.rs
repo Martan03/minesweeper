@@ -33,10 +33,11 @@ impl Widget for Cell {
 
 impl Cell {
     fn get_visible(&self, pos: &Coords) -> String {
-        let (db, lb) = if self.sel {
-            (0xa0a0a0, 0x797979)
-        } else {
-            (0xbcbcbc, 0x797979)
+        let (db, lb) = match (self.sel, self.is_wrong()) {
+            (true, false) => (0xa0a0a0, 0x797979),
+            (false, false) => (0xbcbcbc, 0x797979),
+            (true, true) => (0xdd0000, 0x797979),
+            _ => (0xff0000, 0x797979),
         };
 
         let top = format!("{}{} ▆▆▆▆▆\x1b[0m", Fg::Hex(db), Bg::Hex(lb),);
@@ -85,13 +86,18 @@ impl Cell {
         );
 
         let mid1 = format!(
-            "{}{}▌{}{}▌ ",
+            "{}{}▌{}{}▌{} ",
             Fg::Hex(db),
             Bg::Hex(w),
             Fg::Hex(w),
-            Bg::Hex(lb)
+            Bg::Hex(lb),
+            if self.is_wrong() && self.is_flag() {
+                format!("{}{}", Modifier::Strike, Fg::Hex(0xff0000))
+            } else {
+                "".to_owned()
+            }
         );
-        let mid2 = format!(" {}{}▌\x1b[0m", Fg::Hex(lb), Bg::Hex(db));
+        let mid2 = format!(" \x1b[0m{}{}▌\x1b[0m", Fg::Hex(lb), Bg::Hex(db));
 
         let bot = format!(
             "{}{}▌{}{}▘{}▄▄▄{}▟\x1b[0m",
@@ -104,7 +110,7 @@ impl Cell {
         );
 
         let val = if self.cell_type == CellType::Flag {
-            format!("{}▶", Fg::Hex(0xff0000))
+            format!("{}◀", Fg::Hex(0xff0000))
         } else {
             " ".to_string()
         };

@@ -12,6 +12,7 @@ pub struct Cell {
     pub value: u8,
     pub cell_type: CellType,
     pub sel: bool,
+    wrong: bool,
 }
 
 impl Cell {
@@ -21,6 +22,7 @@ impl Cell {
             value,
             cell_type: CellType::Hidden,
             sel: false,
+            wrong: false,
         }
     }
 
@@ -76,5 +78,13 @@ impl Cell {
     /// Checks whether cell is flag
     pub fn is_flag(&self) -> bool {
         self.cell_type == CellType::Flag
+    }
+
+    pub fn is_wrong(&self) -> bool {
+        self.wrong
+    }
+
+    pub fn set_wrong(&mut self) {
+        self.wrong = true;
     }
 }
