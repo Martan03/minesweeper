@@ -1,15 +1,19 @@
 use crossterm::event::KeyCode;
 use termint::{
-    enums::fg::Fg,
-    geometry::{constrain::Constrain, direction::Direction},
-    term::Term,
+    enums::{bg::Bg, fg::Fg},
+    geometry::{constrain::Constrain, coords::Coords},
     widgets::{
-        block::Block, border::BorderType, layout::Layout, spacer::Spacer,
-        span::Span,
+        layout::Layout,
+        spacer::Spacer,
+        span::{Span, StrSpanExtension},
+        widget::Widget,
     },
 };
 
-use crate::{error::Error, game::Game, game_state::GameScreen};
+use crate::{
+    error::Error, game::Game, game_state::GameScreen,
+    tui::widgets::border::Border,
+};
 
 use super::raw_span::RawSpan;
 
@@ -17,43 +21,47 @@ use super::raw_span::RawSpan;
 impl Game {
     /// Renders help page
     pub fn render_help(&self) {
-        let mut block = Block::new()
-            .title("Minesweeper")
-            .direction(Direction::Horizontal)
-            .border_type(BorderType::Thicker)
-            .center();
-
-        let mut layout = Layout::vertical().center();
-        layout.add_child(
+        let mut help = Layout::vertical().padding((1, 2));
+        help.add_child(
             Self::help_item("←↑↓→", 11, "cursor movement"),
             Constrain::Length(1),
         );
-        layout.add_child(
+        help.add_child(
             Self::help_item("f", 11, "toggle flag"),
             Constrain::Length(1),
         );
-        layout.add_child(
+        help.add_child(
             Self::help_item("d/Enter", 11, "display/reveal cell"),
             Constrain::Length(1),
         );
-        layout.add_child(
+        help.add_child(
             Self::help_item("r", 11, "restart game"),
             Constrain::Length(1),
         );
-        layout.add_child(
+        help.add_child(
             Self::help_item("i", 11, "toggle help"),
             Constrain::Length(1),
         );
-        layout.add_child(
+        help.add_child(
             Self::help_item("Esc", 11, "quit game"),
             Constrain::Length(1),
         );
 
-        block.add_child(layout, Constrain::Length(29));
+        let mut top_bar = Layout::horizontal();
+        top_bar.add_child("Help".fg(Fg::Hex(0x303030)), Constrain::Min(0));
+
+        let border = Border::new(help, top_bar, None, true);
+        let mut wrapper = Layout::vertical().center();
+        wrapper.add_child(border, Constrain::Length(13));
+
+        let mut layout = Layout::horizontal().center();
+        layout.add_child(wrapper, Constrain::Length(40));
 
         print!("\x1b[H\x1b[J");
-        let term = Term::new();
-        _ = term.render(block);
+        layout.render(
+            &Coords::new(1, 1),
+            &Coords::new(self.size.0, self.size.1),
+        );
     }
 
     /// Key listener for help page
@@ -75,11 +83,18 @@ impl Game {
         let mut layout = Layout::horizontal();
         let space = key_len.saturating_sub(key.chars().count() + 2);
         layout.add_child(
-            RawSpan::new(format!("{key}:")).fg(Fg::Cyan),
+            RawSpan::new(format!("{key}:"))
+                .fg(Fg::Hex(0x0000ff))
+                .bg(Bg::Hex(0xbcbcbc)),
             Constrain::Min(0),
         );
         layout.add_child(Spacer::new(), Constrain::Length(space));
-        layout.add_child(Span::new(action), Constrain::Fill);
+        layout.add_child(
+            Span::new(action)
+                .fg(Fg::Hex(0x404040))
+                .bg(Bg::Hex(0xbcbcbc)),
+            Constrain::Fill,
+        );
         layout
     }
 }

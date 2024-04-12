@@ -1,3 +1,5 @@
+use std::io::{stdout, Write};
+
 use termint::{
     enums::{bg::Bg, cursor::Cursor, fg::Fg, modifier::Modifier},
     geometry::coords::Coords,
@@ -7,8 +9,9 @@ use termint::{
 use crate::board::cell::{Cell, CellType};
 
 impl Widget for Cell {
-    fn render(&self, _pos: &Coords, _size: &Coords) {
-        todo!()
+    fn render(&self, pos: &Coords, size: &Coords) {
+        print!("{}", self.get_string(pos, size));
+        _ = stdout().flush();
     }
 
     fn get_string(&self, pos: &Coords, _size: &Coords) -> String {

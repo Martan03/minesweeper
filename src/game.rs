@@ -2,15 +2,11 @@ use std::time::Duration;
 
 use crossterm::event::{poll, read, Event, KeyCode, KeyEvent};
 use termint::{
-    enums::modifier::Modifier,
-    geometry::{
-        constrain::Constrain, coords::Coords, direction::Direction,
-        text_align::TextAlign,
-    },
+    enums::{bg::Bg, fg::Fg, modifier::Modifier},
+    geometry::{constrain::Constrain, coords::Coords, text_align::TextAlign},
     term::Term,
     widgets::{
-        block::Block, border::BorderType, layout::Layout,
-        span::StrSpanExtension, widget::Widget,
+        layout::Layout, spacer::Spacer, span::StrSpanExtension, widget::Widget,
     },
 };
 
@@ -27,7 +23,7 @@ pub struct Game {
     board: Board,
     state: GameState,
     pub screen: GameScreen,
-    size: (usize, usize),
+    pub size: (usize, usize),
 }
 
 impl Game {
@@ -104,11 +100,17 @@ impl Game {
     fn game_layout(&self) -> Layout {
         let mut layout = Layout::vertical().center();
 
-        let sw = self.board.mines.to_string().len();
+        let mut bot_bar = Layout::horizontal();
+        bot_bar.add_child(
+            "🛈 Press i for help".fg(Fg::Hex(0x303030)),
+            Constrain::Min(0),
+        );
+
         let border = Border::new(
             self.board.get_element(self.state == GameState::GameOver),
-            format!("{:<sw$}", self.board.flags_left().to_string()),
-            self.state == GameState::Win,
+            self.get_stats(),
+            bot_bar,
+            false,
         );
         layout.add_child(border, Constrain::Length(self.board.height * 3 + 6));
         layout
@@ -127,6 +129,24 @@ impl Game {
                 .align(TextAlign::Center),
             Constrain::Min(0),
         );
+        layout
+    }
+
+    /// Gets stats layout
+    fn get_stats(&self) -> Layout {
+        let mut layout = Layout::horizontal();
+        layout.add_child(
+            format!("{}", self.board.flags_left()).fg(Fg::Hex(0x303030)),
+            Constrain::Min(0),
+        );
+        layout.add_child(Spacer::new(), Constrain::Fill);
+
+        if self.state == GameState::Win {
+            layout.add_child(
+                "Victory!".fg(Fg::Hex(0x303030)).bg(Bg::Hex(0xbcbcbc)),
+                Constrain::Min(0),
+            );
+        }
         layout
     }
 

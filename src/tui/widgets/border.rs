@@ -8,13 +8,23 @@ use termint::{
 
 pub struct Border {
     board: Layout,
-    left: String,
-    win: bool,
+    top_bar: Option<Layout>,
+    bot_bar: Option<Layout>,
+    bg: bool,
 }
 
 impl Border {
-    pub fn new(board: Layout, left: String, win: bool) -> Self {
-        Self { board, left, win }
+    pub fn new<T, R>(board: Layout, top_bar: T, bot_bar: R, bg: bool) -> Self
+    where
+        T: Into<Option<Layout>>,
+        R: Into<Option<Layout>>,
+    {
+        Self {
+            board,
+            top_bar: top_bar.into(),
+            bot_bar: bot_bar.into(),
+            bg,
+        }
     }
 }
 
@@ -99,6 +109,23 @@ impl Widget for Border {
         );
 
         let mut res = String::new();
+        for y in 0..size.y - 4 {
+            if self.bg {
+                res.push_str(&format!(
+                    "{}{lframe}{}{}{rframe}",
+                    Cursor::Pos(pos.x, pos.y + 2 + y),
+                    Bg::Hex(0xbcbcbc),
+                    " ".repeat(size.x - 7),
+                ));
+            } else {
+                res.push_str(&format!(
+                    "{}{lframe}{}{rframe}",
+                    Cursor::Pos(pos.x, pos.y + 2 + y),
+                    Cursor::Pos(pos.x + size.x - 4, pos.y + 2 + y),
+                ));
+            }
+        }
+
         res.push_str(&format!(
             "{}{}{}{}",
             Cursor::Pos(pos.x, pos.y),
@@ -106,62 +133,71 @@ impl Widget for Border {
             tframe1,
             trframe1
         ));
-        let state = if self.win { "Victory" } else { "" };
-        res.push_str(&format!(
-            "{}{} {}  {}{}{}{}  {} ",
-            Cursor::Pos(pos.x, pos.y + 1),
-            Bg::Hex(0xffffff),
-            Bg::Hex(0xbcbcbc),
-            Fg::Hex(0x303030),
-            self.left,
-            " ".repeat(size.x - self.left.len() - state.len() - 6),
-            state,
-            Bg::Hex(0x797979),
-        ));
+        if let Some(top_bar) = &self.top_bar {
+            res.push_str(&format!(
+                "{}{} {}{}{} {}",
+                Cursor::Pos(pos.x, pos.y + 1),
+                Bg::Hex(0xffffff),
+                Bg::Hex(0xbcbcbc),
+                " ".repeat(size.x - 2),
+                Bg::Hex(0x797979),
+                Bg::Hex(0xbcbcbc),
+            ));
+            res.push_str(&top_bar.get_string(
+                &Coords::new(pos.x + 3, pos.y + 1),
+                &Coords::new(size.x - 6, 1),
+            ));
+        }
         res.push_str(&format!(
             "{}{}{}{}",
-            Cursor::Pos(pos.x, pos.y + 2),
+            Cursor::Pos(pos.x, pos.y + 1 + self.top_bar.is_some() as usize),
             tlframe2,
             tframe2,
             trframe2
         ));
 
-        for y in 0..size.y - 5 {
-            res.push_str(&format!(
-                "{}{lframe}{}{rframe}",
-                Cursor::Pos(pos.x, pos.y + 3 + y),
-                Cursor::Pos(pos.x + size.x - 4, pos.y + 3 + y),
-            ));
-        }
-
         res.push_str(&format!(
             "{}{blframe1}{bframe1}{brframe1}",
-            Cursor::Pos(pos.x, pos.y + size.y - 3)
+            Cursor::Pos(
+                pos.x,
+                pos.y + size.y - 2 - self.bot_bar.is_some() as usize
+            )
         ));
-        res.push_str(&format!(
-            "{}{} {}  {}🛈 Press i for help{}{} ",
-            Cursor::Pos(pos.x, pos.y + size.y - 2),
-            Bg::Hex(0xffffff),
-            Bg::Hex(0xbcbcbc),
-            Fg::Hex(0x303030),
-            " ".repeat(size.x - 22),
-            Bg::Hex(0x797979),
-        ));
+        if let Some(bot_bar) = &self.bot_bar {
+            res.push_str(&format!(
+                "{}{} {}{}{} {}",
+                Cursor::Pos(pos.x, pos.y + size.y - 2),
+                Bg::Hex(0xffffff),
+                Bg::Hex(0xbcbcbc),
+                " ".repeat(size.x - 2),
+                Bg::Hex(0x797979),
+                Bg::Hex(0xbcbcbc),
+            ));
+            res.push_str(&bot_bar.get_string(
+                &Coords::new(pos.x + 3, pos.y + size.y - 2),
+                &Coords::new(size.x - 6, 1),
+            ));
+        }
         res.push_str(&format!(
             "{}{blframe2}{bframe2}{brframe2}",
             Cursor::Pos(pos.x, pos.y + size.y - 1)
         ));
 
-        res.push_str(
-            &self
-                .board
-                .get_string(&Coords::new(pos.x + 3, pos.y + 3), size),
-        );
+        res.push_str(&self.board.get_string(
+            &Coords::new(
+                pos.x + 3,
+                pos.y + 2 + self.top_bar.is_some() as usize,
+            ),
+            size,
+        ));
         res
     }
 
     fn height(&self, size: &Coords) -> usize {
-        self.board.height(size) + 6
+        self.board.height(size)
+            + 4
+            + self.top_bar.is_some() as usize
+            + self.bot_bar.is_some() as usize
     }
 
     fn width(&self, size: &Coords) -> usize {
