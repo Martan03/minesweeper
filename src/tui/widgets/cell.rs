@@ -20,11 +20,11 @@ impl Widget for Cell {
     }
 
     fn height(&self, _size: &Coords) -> usize {
-        todo!()
+        3
     }
 
     fn width(&self, _size: &Coords) -> usize {
-        todo!()
+        6
     }
 }
 

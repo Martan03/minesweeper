@@ -101,6 +101,7 @@ impl Board {
     /// Resets the [`Board`]
     pub fn reset(&mut self) {
         self.cells = vec![Cell::new(0); self.width * self.height];
+        self.cells[self.cur.x + self.cur.y * self.width].sel();
         self.generated = false;
         self.rev = 0;
         self.flags = 0;

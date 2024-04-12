@@ -22,7 +22,7 @@ use crate::{
     board::board::Board,
     error::Error,
     game_state::{GameScreen, GameState},
-    tui::raw_span::RawSpan,
+    tui::{raw_span::RawSpan, widgets::border::Border},
 };
 
 /// Struct containing game info and implementing the game loop
@@ -87,14 +87,12 @@ impl Game {
 
     /// Renders game
     fn render_game(&self) {
-        let layout = match Term::get_size() {
-            Some((w, h))
-                if self.board.width * 5 + 2 >= w
-                    || self.board.height * 3 + 2 >= h =>
-            {
-                self.render_small_msg()
-            }
-            _ => self.game_layout(),
+        let layout = if self.board.width * 6 + 9 >= self.size.0
+            || self.board.height * 3 + 6 >= self.size.1
+        {
+            self.render_small_msg()
+        } else {
+            self.game_layout()
         };
 
         let mut block = Block::new()
@@ -102,7 +100,7 @@ impl Game {
             .border_type(BorderType::Thicker)
             .direction(Direction::Horizontal)
             .center();
-        block.add_child(layout, Constrain::Length(self.board.width * 6));
+        block.add_child(layout, Constrain::Length(self.board.width * 6 + 7));
 
         // print!("\x1b[H\x1b[J");
         block.render(
@@ -114,10 +112,10 @@ impl Game {
     fn game_layout(&self) -> Layout {
         let mut layout = Layout::vertical().center();
         layout.add_child(self.render_stats(), Constrain::Length(1));
-        layout.add_child(
+        let border = Border::new(
             self.board.get_element(self.state == GameState::GameOver),
-            Constrain::Length(self.board.height * 3),
         );
+        layout.add_child(border, Constrain::Length(self.board.height * 3 + 4));
         layout
             .add_child(RawSpan::new(" 🛈 Press i for help"), Constrain::Min(0));
         layout
