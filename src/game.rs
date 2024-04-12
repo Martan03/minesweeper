@@ -102,7 +102,7 @@ impl Game {
             .border_type(BorderType::Thicker)
             .direction(Direction::Horizontal)
             .center();
-        block.add_child(layout, Constrain::Length(self.board.width * 5));
+        block.add_child(layout, Constrain::Length(self.board.width * 6));
 
         // print!("\x1b[H\x1b[J");
         block.render(

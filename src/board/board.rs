@@ -11,10 +11,10 @@ use super::cell::Cell;
 pub struct Board {
     pub width: usize,
     pub height: usize,
-    cells: Vec<Cell>,
+    pub cells: Vec<Cell>,
     pub mines: usize,
     generated: bool,
-    cur: Coords,
+    pub cur: Coords,
     rev: usize,
     flags: usize,
 }
@@ -22,10 +22,12 @@ pub struct Board {
 impl Board {
     /// Creates new [`Board`] with given size
     pub fn new(width: usize, height: usize, mines: usize) -> Self {
+        let mut cells = vec![Cell::new(0x00); width * height];
+        cells[0].sel();
         Self {
             width,
             height,
-            cells: vec![Cell::new(0x00); width * height],
+            cells,
             mines,
             generated: false,
             cur: Coords::new(0, 0),
@@ -35,14 +37,17 @@ impl Board {
     }
 
     /// Gets [`Board`] as termint Layout element
-    pub fn get_element(&self, over: bool) -> Layout {
+    pub fn get_element(&self, _over: bool) -> Layout {
         let mut layout = Layout::vertical();
         for y in 0..self.height {
             let mut row = Layout::horizontal();
             for x in 0..self.width {
-                let cell = self.cells[self.get_id(x, y)]
-                    .get_element(self.cur.x == x && self.cur.y == y, over);
-                row.add_child(cell, Constrain::Length(5));
+                // let cell = self.cells[self.get_id(x, y)]
+                //     .get_element(self.cur.x == x && self.cur.y == y, over);
+                row.add_child(
+                    self.cells[self.get_id(x, y)].clone(),
+                    Constrain::Length(6),
+                );
             }
             layout.add_child(row, Constrain::Length(3));
         }
@@ -107,25 +112,33 @@ impl Board {
     }
 
     pub fn cur_up(&mut self) {
+        self.cells[self.cur.x + self.cur.y * self.width].sel();
         self.cur.y = self.cur.y.checked_sub(1).unwrap_or(self.height - 1);
+        self.cells[self.cur.x + self.cur.y * self.width].sel();
     }
 
     pub fn cur_down(&mut self) {
+        self.cells[self.cur.x + self.cur.y * self.width].sel();
         self.cur.y += 1;
         if self.cur.y >= self.height {
             self.cur.y = 0;
         }
+        self.cells[self.cur.x + self.cur.y * self.width].sel();
     }
 
     pub fn cur_left(&mut self) {
+        self.cells[self.cur.x + self.cur.y * self.width].sel();
         self.cur.x = self.cur.x.checked_sub(1).unwrap_or(self.width - 1);
+        self.cells[self.cur.x + self.cur.y * self.width].sel();
     }
 
     pub fn cur_right(&mut self) {
+        self.cells[self.cur.x + self.cur.y * self.width].sel();
         self.cur.x += 1;
         if self.cur.x >= self.width {
             self.cur.x = 0;
         }
+        self.cells[self.cur.x + self.cur.y * self.width].sel();
     }
 }
 
@@ -218,7 +231,7 @@ impl Board {
     }
 
     /// Gets cell id from given coords
-    fn get_id(&self, x: usize, y: usize) -> usize {
+    pub fn get_id(&self, x: usize, y: usize) -> usize {
         self.width * y + x
     }
 

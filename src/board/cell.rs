@@ -1,11 +1,3 @@
-use termint::{
-    enums::fg::Fg,
-    geometry::{constrain::Constrain, direction::Direction},
-    widgets::{block::Block, border::BorderType},
-};
-
-use crate::tui::raw_span::RawSpan;
-
 /// Enum representing cell type
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum CellType {
@@ -17,8 +9,9 @@ pub enum CellType {
 /// Struct representing cell in board
 #[derive(Debug, Clone)]
 pub struct Cell {
-    value: u8,
-    cell_type: CellType,
+    pub value: u8,
+    pub cell_type: CellType,
+    pub sel: bool,
 }
 
 impl Cell {
@@ -27,6 +20,7 @@ impl Cell {
         Self {
             value,
             cell_type: CellType::Hidden,
+            sel: false,
         }
     }
 
@@ -64,13 +58,9 @@ impl Cell {
         flags
     }
 
-    /// Gets [`Cell`] termint element
-    pub fn get_element(&self, active: bool, over: bool) -> Block {
-        let mut block = Block::new().direction(Direction::Horizontal).center();
-        if active {
-            block = block.border_type(BorderType::Thicker);
-        }
-        self.cell_value(block, over)
+    /// Toggles whether [`Cell`] is selected
+    pub fn sel(&mut self) {
+        self.sel = !self.sel;
     }
 
     /// Checks whether cell is mine
@@ -86,44 +76,5 @@ impl Cell {
     /// Checks whether cell is flag
     pub fn is_flag(&self) -> bool {
         self.cell_type == CellType::Flag
-    }
-}
-
-impl Cell {
-    /// Fills block with cell value element
-    fn cell_value(&self, mut block: Block, end: bool) -> Block {
-        match self.cell_type {
-            CellType::Hidden => {
-                block.add_child(RawSpan::new(" "), Constrain::Min(0));
-                block = block.border_color(Fg::Gray);
-                return block;
-            }
-            CellType::Visible => {
-                block.add_child(self.cell_vis_value(), Constrain::Min(0));
-            }
-            CellType::Flag => {
-                block.add_child(RawSpan::new("🚩"), Constrain::Min(0))
-            }
-        }
-        if end && self.value == 0xff {
-            block = block.border_color(Fg::Red);
-        }
-        block
-    }
-
-    /// Gets visible cell value element
-    fn cell_vis_value(&self) -> RawSpan {
-        match self.value {
-            0x01 => RawSpan::new("1").fg(Fg::RGB(4, 59, 239)),
-            0x02 => RawSpan::new("2").fg(Fg::RGB(32, 145, 4)),
-            0x03 => RawSpan::new("3").fg(Fg::RGB(252, 25, 29)),
-            0x04 => RawSpan::new("4").fg(Fg::RGB(0, 6, 124)),
-            0x05 => RawSpan::new("5").fg(Fg::RGB(140, 4, 6)),
-            0x06 => RawSpan::new("6").fg(Fg::RGB(13, 125, 153)),
-            0x07 => RawSpan::new("7").fg(Fg::RGB(0, 0, 0)),
-            0x08 => RawSpan::new("8").fg(Fg::RGB(180, 180, 180)),
-            0xff => RawSpan::new("💣"),
-            _ => RawSpan::new(" "),
-        }
     }
 }

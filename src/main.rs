@@ -39,6 +39,6 @@ fn start_game(args: Args) -> Result<(), Error> {
     };
 
     enable_raw_mode()?;
-    game.game_loop()?;
+    _ = game.game_loop();
     Ok(disable_raw_mode()?)
 }
