@@ -37,10 +37,7 @@ impl Cell {
         };
 
         let top = format!("{}{} ▆▆▆▆▆\x1b[0m", Fg::Hex(db), Bg::Hex(lb),);
-
         let mid1 = format!("{} {}  ", Bg::Hex(lb), Bg::Hex(db));
-        let mid2 = format!(" \x1b[0m");
-
         let bot = format!(
             "{} {}{}▂▂▂▂▂\x1b[0m",
             Bg::Hex(lb),
@@ -57,12 +54,12 @@ impl Cell {
             0x06 => format!("{}{}6 ", Modifier::Bold, Fg::Hex(0x007777)),
             0x07 => format!("{}{}7 ", Modifier::Bold, Fg::Hex(0x000000)),
             0x08 => format!("{}{}8 ", Modifier::Bold, Fg::Hex(0x777777)),
-            0xff => format!("💣"),
-            _ => format!("  "),
+            0xff => "💣".to_string(),
+            _ => "  ".to_string(),
         };
 
         format!(
-            "{}{top}{}{mid1}{val}{mid2}{}{bot}",
+            "{}{top}{}{mid1}{val} \x1b[0m{}{bot}",
             Cursor::Pos(pos.x, pos.y),
             Cursor::Pos(pos.x, pos.y + 1),
             Cursor::Pos(pos.x, pos.y + 2)

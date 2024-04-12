@@ -157,13 +157,10 @@ impl Game {
     }
 
     fn game_key_listen(&mut self, code: KeyCode) -> Result<(), Error> {
-        if self.state != GameState::Playing {
-            return self.over_key_listen(code);
-        }
-
+        let playing = self.state == GameState::Playing;
         match code {
             KeyCode::Esc => return Err(Error::ExitErr),
-            KeyCode::Enter | KeyCode::Char('d') => {
+            KeyCode::Enter | KeyCode::Char('d') if playing => {
                 if !self.board.reveal() {
                     self.state = GameState::GameOver;
                     self.board.reveal_mines();
@@ -172,13 +169,16 @@ impl Game {
                     self.state = GameState::Win;
                 }
             }
-            KeyCode::Char('f') => {
+            KeyCode::Char('f') if playing => {
                 self.board.flag();
                 if self.board.win() {
                     self.state = GameState::Win;
                 }
             }
-            KeyCode::Char('r') => self.board.reset(),
+            KeyCode::Char('r') => {
+                self.board.reset();
+                self.state = GameState::Playing;
+            }
             KeyCode::Char('i') => self.screen = GameScreen::Help,
             KeyCode::Up => self.board.cur_up(),
             KeyCode::Down => self.board.cur_down(),
@@ -186,22 +186,6 @@ impl Game {
             KeyCode::Right => self.board.cur_right(),
             _ => return Ok(()),
         }
-        self.render();
-        Ok(())
-    }
-
-    /// Game over key listener
-    fn over_key_listen(&mut self, code: KeyCode) -> Result<(), Error> {
-        match code {
-            KeyCode::Esc => return Err(Error::ExitErr),
-            KeyCode::Char('r') => {
-                self.board.reset();
-                self.state = GameState::Playing;
-            }
-            KeyCode::Char('i') => self.screen = GameScreen::Help,
-            _ => return Ok(()),
-        }
-
         self.render();
         Ok(())
     }

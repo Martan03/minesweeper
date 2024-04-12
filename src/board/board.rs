@@ -94,8 +94,8 @@ impl Board {
 
     /// Returns true when game is won, else false
     pub fn win(&self) -> bool {
-        return self.rev + self.flags == self.width * self.height
-            && self.mines == self.flags;
+        self.rev + self.flags == self.width * self.height
+            && self.mines == self.flags
     }
 
     /// Resets the [`Board`]
@@ -208,7 +208,7 @@ impl Board {
         cell.show();
         self.rev += 1;
         if cell.get() == 0x00 {
-            for n in self.get_neighbors(&coords) {
+            for n in self.get_neighbors(coords) {
                 self.reveal_cell(&n);
             }
         }

@@ -13,6 +13,7 @@ pub enum Difficulty {
     Custom(usize, usize, usize),
 }
 
+#[derive(Debug, Default)]
 pub struct Args {
     pub diff: Difficulty,
     pub help: bool,
@@ -113,14 +114,5 @@ impl Args {
             "-h --help" => "Displays this help"
         );
         Ok(())
-    }
-}
-
-impl Default for Args {
-    fn default() -> Self {
-        Self {
-            diff: Default::default(),
-            help: false,
-        }
     }
 }
