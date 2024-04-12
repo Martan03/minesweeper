@@ -229,6 +229,7 @@ impl Board {
                 continue;
             }
             if cell.is_mine() {
+                cell.set_wrong();
                 ret = false;
             } else {
                 self.reveal_cell(&n);
