@@ -2,7 +2,7 @@
 
 Minesweeper implemented in terminal
 
-![image](https://github.com/Martan03/minesweeper/assets/46300167/7ee06ad9-15d5-4d6a-a6f1-55fc36f9793b)
+![image](https://github.com/Martan03/minesweeper/assets/46300167/bb6d9047-36e4-405a-a19b-5d6490ddc815)
 
 ## Installation:
 You have to compile it yourself, but that shouldn't be a problem. Only thing
@@ -31,7 +31,8 @@ Or you can create your custom difficulty:
 ## Detailed description
 
 ### Game screen:
-![image](https://github.com/Martan03/minesweeper/assets/46300167/7ee06ad9-15d5-4d6a-a6f1-55fc36f9793b)
+
+![image](https://github.com/Martan03/minesweeper/assets/46300167/bb6d9047-36e4-405a-a19b-5d6490ddc815)
 
 When you start the game, you will see the board in the middle and number of
 flags left above the board on the left side. You can then use arrow keys to
@@ -42,7 +43,8 @@ When you fill the whole board and it's correct, you will see Victory message
 above the board on the right side.
 
 ### Help screen
-![image](https://github.com/Martan03/minesweeper/assets/46300167/2c0e4cdd-797a-4f23-88cf-eedaa2ba9cd9)
+
+![image](https://github.com/Martan03/minesweeper/assets/46300167/447d6824-de3b-4784-b281-9b18678f8495)
 
 By pressing `i` you can display help with all other keybind that I didn't
 mention.
