@@ -2,19 +2,15 @@ use std::time::Duration;
 
 use crossterm::event::{poll, read, Event, KeyCode, KeyEvent};
 use termint::{
-    enums::{modifier::Modifier, wrap::Wrap},
+    enums::modifier::Modifier,
     geometry::{
         constrain::Constrain, coords::Coords, direction::Direction,
         text_align::TextAlign,
     },
     term::Term,
     widgets::{
-        block::Block,
-        border::BorderType,
-        layout::Layout,
-        spacer::Spacer,
-        span::{Span, StrSpanExtension},
-        widget::Widget,
+        block::Block, border::BorderType, layout::Layout,
+        span::StrSpanExtension, widget::Widget,
     },
 };
 
@@ -22,7 +18,7 @@ use crate::{
     board::board::Board,
     error::Error,
     game_state::{GameScreen, GameState},
-    tui::{raw_span::RawSpan, widgets::border::Border},
+    tui::widgets::border::Border,
 };
 
 /// Struct containing game info and implementing the game loop
@@ -95,15 +91,11 @@ impl Game {
             self.game_layout()
         };
 
-        let mut block = Block::new()
-            .title("Minesweeper")
-            .border_type(BorderType::Thicker)
-            .direction(Direction::Horizontal)
-            .center();
-        block.add_child(layout, Constrain::Length(self.board.width * 6 + 7));
+        let mut main = Layout::horizontal().center();
+        main.add_child(layout, Constrain::Length(self.board.width * 6 + 7));
 
         // print!("\x1b[H\x1b[J");
-        block.render(
+        main.render(
             &Coords::new(1, 1),
             &Coords::new(self.size.0, self.size.1),
         );
@@ -111,13 +103,14 @@ impl Game {
 
     fn game_layout(&self) -> Layout {
         let mut layout = Layout::vertical().center();
-        layout.add_child(self.render_stats(), Constrain::Length(1));
+
+        let sw = self.board.mines.to_string().len();
         let border = Border::new(
             self.board.get_element(self.state == GameState::GameOver),
+            format!("{:<sw$}", self.board.flags_left().to_string()),
+            self.state == GameState::Win,
         );
-        layout.add_child(border, Constrain::Length(self.board.height * 3 + 4));
-        layout
-            .add_child(RawSpan::new(" 🛈 Press i for help"), Constrain::Min(0));
+        layout.add_child(border, Constrain::Length(self.board.height * 3 + 6));
         layout
     }
 
@@ -134,25 +127,6 @@ impl Game {
                 .align(TextAlign::Center),
             Constrain::Min(0),
         );
-        layout
-    }
-
-    /// Renders stats
-    fn render_stats(&self) -> Layout {
-        let mut layout = Layout::horizontal().padding((0, 1));
-        let sw = self.board.mines.to_string().len();
-        layout.add_child(
-            Span::new(format!("{:<sw$}", self.board.flags_left().to_string()))
-                .wrap(Wrap::Letter),
-            Constrain::Min(0),
-        );
-        layout.add_child(Spacer::new(), Constrain::Fill);
-
-        if self.state == GameState::Win {
-            layout.add_child("Victory!", Constrain::Min(0));
-        } else {
-            layout.add_child("        ".wrap(Wrap::Letter), Constrain::Min(0));
-        }
         layout
     }
 
