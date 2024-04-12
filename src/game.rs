@@ -153,7 +153,7 @@ impl Game {
     fn game_key_listen(&mut self, code: KeyCode) -> Result<(), Error> {
         let playing = self.state == GameState::Playing;
         match code {
-            KeyCode::Esc => return Err(Error::ExitErr),
+            KeyCode::Esc | KeyCode::Char('q') => return Err(Error::ExitErr),
             KeyCode::Enter | KeyCode::Char('d') if playing => {
                 if !self.board.reveal() {
                     self.state = GameState::GameOver;
