@@ -2,6 +2,7 @@ use std::io::{stdout, Write};
 
 use args::Difficulty;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
+use diff_picker::diff_picker;
 use error::Error;
 use game::Game;
 
@@ -9,6 +10,7 @@ use crate::args::Args;
 
 mod args;
 mod board;
+mod diff_picker;
 mod error;
 mod game;
 mod game_state;
@@ -31,14 +33,18 @@ fn main() -> Result<(), String> {
 }
 
 fn start_game(args: Args) -> Result<(), Error> {
-    let mut game = match args.diff {
+    enable_raw_mode()?;
+    let diff = match args.diff {
+        Some(diff) => diff,
+        None => diff_picker()?,
+    };
+    let mut game = match diff {
         Difficulty::Easy => Game::new(9, 9, 10),
         Difficulty::Medium => Game::new(16, 16, 40),
         Difficulty::Hard => Game::new(30, 16, 99),
         Difficulty::Custom(w, h, m) => Game::new(w, h, m),
     };
 
-    enable_raw_mode()?;
     _ = game.game_loop();
     Ok(disable_raw_mode()?)
 }

@@ -8,23 +8,37 @@ use termint::{
 
 pub struct Border {
     board: Layout,
-    top_bar: Option<Layout>,
-    bot_bar: Option<Layout>,
+    top_bar: Option<Box<dyn Widget>>,
+    bot_bar: Option<Box<dyn Widget>>,
     bg: bool,
 }
 
 impl Border {
-    pub fn new<T, R>(board: Layout, top_bar: T, bot_bar: R, bg: bool) -> Self
-    where
-        T: Into<Option<Layout>>,
-        R: Into<Option<Layout>>,
-    {
+    pub fn new(board: Layout, bg: bool) -> Self {
         Self {
             board,
-            top_bar: top_bar.into(),
-            bot_bar: bot_bar.into(),
+            top_bar: None,
+            bot_bar: None,
             bg,
         }
+    }
+
+    /// Sets top bar to given [`Widget`]
+    pub fn top_bar<T>(mut self, bar: T) -> Self
+    where
+        T: Into<Box<dyn Widget>>,
+    {
+        self.top_bar = Some(bar.into());
+        self
+    }
+
+    /// Sets bottom bar to given [`Widget`]
+    pub fn bot_bar<T>(mut self, bar: T) -> Self
+    where
+        T: Into<Box<dyn Widget>>,
+    {
+        self.bot_bar = Some(bar.into());
+        self
     }
 }
 
@@ -188,7 +202,13 @@ impl Widget for Border {
                 pos.x + 3,
                 pos.y + 2 + self.top_bar.is_some() as usize,
             ),
-            size,
+            &Coords::new(
+                size.x.saturating_sub(7),
+                size.y.saturating_sub(
+                    4 + self.top_bar.is_some() as usize
+                        + self.bot_bar.is_some() as usize,
+                ),
+            ),
         ));
         res
     }

@@ -108,10 +108,10 @@ impl Game {
 
         let border = Border::new(
             self.board.get_element(self.state == GameState::GameOver),
-            self.get_stats(),
-            bot_bar,
             false,
-        );
+        )
+        .top_bar(self.get_stats())
+        .bot_bar(bot_bar);
         layout.add_child(border, Constrain::Length(self.board.height * 3 + 6));
         layout
     }
@@ -153,7 +153,7 @@ impl Game {
     fn game_key_listen(&mut self, code: KeyCode) -> Result<(), Error> {
         let playing = self.state == GameState::Playing;
         match code {
-            KeyCode::Esc => return Err(Error::ExitErr),
+            KeyCode::Esc | KeyCode::Char('q') => return Err(Error::ExitErr),
             KeyCode::Enter | KeyCode::Char('d') if playing => {
                 if !self.board.reveal() {
                     self.state = GameState::GameOver;

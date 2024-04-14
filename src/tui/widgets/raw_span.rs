@@ -1,5 +1,5 @@
 use termint::{
-    enums::{bg::Bg, cursor::Cursor, fg::Fg},
+    enums::{bg::Bg, cursor::Cursor, fg::Fg, modifier::Modifier},
     geometry::coords::Coords,
     widgets::widget::Widget,
 };
@@ -13,6 +13,7 @@ pub struct RawSpan {
     text: String,
     fg: Fg,
     bg: Option<Bg>,
+    modifier: Option<Modifier>,
 }
 
 impl RawSpan {
@@ -22,6 +23,7 @@ impl RawSpan {
             text: text.as_ref().to_string(),
             fg: Default::default(),
             bg: None,
+            modifier: None,
         }
     }
 
@@ -36,6 +38,12 @@ impl RawSpan {
         self.bg = bg.into();
         self
     }
+
+    /// Sets [`RawSpan`] modifier
+    pub fn modifier(mut self, modifier: Modifier) -> Self {
+        self.modifier = Some(modifier);
+        self
+    }
 }
 
 impl Widget for RawSpan {
@@ -45,8 +53,11 @@ impl Widget for RawSpan {
 
     fn get_string(&self, pos: &Coords, _size: &Coords) -> String {
         format!(
-            "{}{}{}{}\x1b[0m",
+            "{}{}{}{}{}\x1b[0m",
             self.bg.map(|v| v.to_string()).unwrap_or("".to_string()),
+            self.modifier
+                .map(|v| v.to_string())
+                .unwrap_or("".to_string()),
             Cursor::Pos(pos.x, pos.y),
             self.fg,
             self.text,

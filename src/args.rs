@@ -15,7 +15,7 @@ pub enum Difficulty {
 
 #[derive(Debug, Default)]
 pub struct Args {
-    pub diff: Difficulty,
+    pub diff: Option<Difficulty>,
     pub help: bool,
 }
 
@@ -56,9 +56,9 @@ impl Args {
         };
 
         self.diff = match diff.as_str() {
-            "easy" => Difficulty::Easy,
-            "medium" => Difficulty::Medium,
-            "hard" => Difficulty::Hard,
+            "easy" => Some(Difficulty::Easy),
+            "medium" => Some(Difficulty::Medium),
+            "hard" => Some(Difficulty::Hard),
             _ => return Err(format!("Invalid difficulty: '{}'", diff)),
         };
         Ok(())
@@ -73,7 +73,7 @@ impl Args {
         let height = Args::get_num(args)?;
         let mines = Args::get_num(args)?;
 
-        self.diff = Difficulty::Custom(width, height, mines);
+        self.diff = Some(Difficulty::Custom(width, height, mines));
         Ok(())
     }
 

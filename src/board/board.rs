@@ -4,7 +4,7 @@ use termint::{
     widgets::layout::Layout,
 };
 
-use super::cell::Cell;
+use super::cell::{Cell, CellType};
 
 /// Struct representing board
 #[derive(Debug, Clone)]
@@ -42,10 +42,9 @@ impl Board {
         for y in 0..self.height {
             let mut row = Layout::horizontal();
             for x in 0..self.width {
-                // let cell = self.cells[self.get_id(x, y)]
-                //     .get_element(self.cur.x == x && self.cur.y == y, over);
                 row.add_child(
-                    self.cells[self.get_id(x, y)].clone(),
+                    self.cells[self.get_id(x, y)]
+                        .get_element(self.cur.x == x && self.cur.y == y),
                     Constrain::Length(6),
                 );
             }
@@ -65,6 +64,7 @@ impl Board {
             return true;
         }
         if self.cells[id].is_mine() {
+            self.cells[id].set(0xfe);
             return false;
         }
 
@@ -79,9 +79,12 @@ impl Board {
 
     /// Reveals all mines
     pub fn reveal_mines(&mut self) {
-        for i in 0..self.cells.len() {
-            if self.cells[i].is_mine() {
-                self.cells[i].show();
+        for cell in &mut self.cells {
+            if cell.is_mine() {
+                cell.show();
+            }
+            if !cell.is_mine() && cell.is_flag() {
+                cell.cell_type = CellType::WrongFlag;
             }
         }
     }
@@ -223,6 +226,7 @@ impl Board {
                 continue;
             }
             if cell.is_mine() {
+                cell.set(0xfe);
                 ret = false;
             } else {
                 self.reveal_cell(&n);

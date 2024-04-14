@@ -50,7 +50,7 @@ impl Game {
         let mut top_bar = Layout::horizontal();
         top_bar.add_child("Help".fg(Fg::Hex(0x303030)), Constrain::Min(0));
 
-        let border = Border::new(help, top_bar, None, true);
+        let border = Border::new(help, true).top_bar(top_bar);
         let mut wrapper = Layout::vertical().center();
         wrapper.add_child(border, Constrain::Length(13));
 
@@ -67,7 +67,7 @@ impl Game {
     /// Key listener for help page
     pub fn help_key_listen(&mut self, code: KeyCode) -> Result<(), Error> {
         match code {
-            KeyCode::Esc => return Err(Error::ExitErr),
+            KeyCode::Esc | KeyCode::Char('q') => return Err(Error::ExitErr),
             KeyCode::Char('i') => {
                 print!("\x1b[H\x1b[J");
                 self.screen = GameScreen::Game
