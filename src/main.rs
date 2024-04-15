@@ -2,15 +2,14 @@ use std::io::{stdout, Write};
 
 use args::Difficulty;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
-use diff_picker::diff_picker;
 use error::Error;
 use game::Game;
+use tui::diff_picker::diff_picker;
 
 use crate::args::Args;
 
 mod args;
 mod board;
-mod diff_picker;
 mod error;
 mod game;
 mod game_state;

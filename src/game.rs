@@ -28,6 +28,8 @@ pub struct Game {
 
 impl Game {
     /// Creates new [`Game`] struct
+    /// ### Returns:
+    /// - Constructed [`Game`]
     pub fn new(width: usize, height: usize, mines: usize) -> Self {
         Self {
             board: Board::new(width, height, mines),

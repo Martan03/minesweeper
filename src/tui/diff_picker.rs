@@ -6,9 +6,9 @@ use crossterm::{
 };
 use termint::{
     enums::fg::Fg,
-    geometry::{constrain::Constrain, text_align::TextAlign},
+    geometry::{constrain::Constrain, coords::Coords, text_align::TextAlign},
     term::Term,
-    widgets::{layout::Layout, span::StrSpanExtension},
+    widgets::{layout::Layout, span::StrSpanExtension, widget::Widget},
 };
 
 use crate::{
@@ -17,12 +17,24 @@ use crate::{
     tui::widgets::{border::Border, button::Button},
 };
 
+/// Difficulty picker loop with rendering and key listener
+/// ### Returns:
+/// - Selected difficulty
 pub fn diff_picker() -> Result<Difficulty, Error> {
     let mut cur = 0;
-    dp_render(cur);
+    let mut size = Term::get_size().unwrap_or((0, 0));
+
+    dp_render(size, cur);
     loop {
         if poll(Duration::from_millis(100))? {
-            if let Some(sel) = dp_listener(&mut cur)? {
+            if let Some(s) = Term::get_size() {
+                if s != size {
+                    size = s;
+                    print!("\x1b[H\x1b[J");
+                    dp_render(size, cur);
+                }
+            }
+            if let Some(sel) = dp_listener(size, &mut cur)? {
                 match sel {
                     0 => return Ok(Difficulty::Easy),
                     1 => return Ok(Difficulty::Medium),
@@ -33,7 +45,8 @@ pub fn diff_picker() -> Result<Difficulty, Error> {
     }
 }
 
-fn dp_render(cur: usize) {
+/// Renders difficulty picker with selected item given by `cur`
+fn dp_render(size: (usize, usize), cur: usize) {
     let mut layout = Layout::vertical();
     layout.add_child(get_button("Easy", cur == 0), Constrain::Min(0));
     layout.add_child(get_button("Medium", cur == 1), Constrain::Min(0));
@@ -47,11 +60,16 @@ fn dp_render(cur: usize) {
     let mut main = Layout::horizontal().center();
     main.add_child(wrapper, Constrain::Min(0));
 
-    let term = Term::new();
-    _ = term.render(main);
+    main.render(&Coords::new(1, 1), &Coords::new(size.0, size.1));
 }
 
-fn dp_listener(cur: &mut usize) -> Result<Option<usize>, Error> {
+/// Difficulty picker key listener
+/// ### Returns:
+/// - Selected index, else None
+fn dp_listener(
+    size: (usize, usize),
+    cur: &mut usize,
+) -> Result<Option<usize>, Error> {
     let Event::Key(KeyEvent { code, .. }) = read()? else {
         return Ok(None);
     };
@@ -67,10 +85,11 @@ fn dp_listener(cur: &mut usize) -> Result<Option<usize>, Error> {
         _ => return Ok(None),
     };
 
-    dp_render(*cur);
+    dp_render(size, *cur);
     Ok(None)
 }
 
+/// Difficulty picker button getter
 fn get_button(text: &str, sel: bool) -> Button {
     Button::new(text.fg(Fg::Hex(0x303030)).align(TextAlign::Center))
         .selected(sel)

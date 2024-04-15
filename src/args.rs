@@ -21,6 +21,8 @@ pub struct Args {
 
 impl Args {
     /// Parses given args and checks contraints
+    /// ### Returns:
+    /// - Constructed [`Args`]
     pub fn parse(args: std::env::Args) -> Result<Self, String> {
         let mut parsed = Args::default();
         let args_len = args.len();
@@ -105,7 +107,7 @@ impl Args {
         );
         help!(
             "Usage":
-            "minesweeper" => "Starts the game with medium difficulty\n"
+            "minesweeper" => "Opens TUI difficulty picker\n"
             "minesweeper" ["flags"] => "Start the game with given options\n"
             "Flags":
             "-d --diff" ["easy|medium|hard"] => "Sets the game difficulty\n"
