@@ -156,6 +156,7 @@ impl Game {
         let playing = self.state == GameState::Playing;
         match code {
             KeyCode::Esc | KeyCode::Char('q') => return Err(Error::ExitErr),
+            KeyCode::Char('c') => self.board.center(),
             KeyCode::Enter | KeyCode::Char('d') if playing => {
                 if !self.board.reveal() {
                     self.state = GameState::GameOver;

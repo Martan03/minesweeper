@@ -30,7 +30,7 @@ impl Board {
             cells,
             mines,
             generated: false,
-            cur: Coords::new(0, 0),
+            cur: center_of(width, height),
             rev: 0,
             flags: 0,
         }
@@ -113,6 +113,10 @@ impl Board {
     /// Gets flags left
     pub fn flags_left(&self) -> isize {
         self.mines as isize - self.flags as isize
+    }
+
+    pub fn center(&mut self) {
+        self.cur = center_of(self.width, self.height);
     }
 
     pub fn cur_up(&mut self) {
@@ -263,4 +267,8 @@ impl Board {
             cells.push(Coords::new(x as usize, y as usize));
         }
     }
+}
+
+fn center_of(x: usize, y: usize) -> Coords {
+    Coords::new((x - 1) / 2, (y - 1) / 2)
 }
