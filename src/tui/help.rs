@@ -46,13 +46,17 @@ impl Game {
             Self::help_item("Esc", 11, "quit game"),
             Constrain::Length(1),
         );
+        help.add_child(
+            Self::help_item("c", 11, "center the cursor"),
+            Constrain::Length(1),
+        );
 
         let mut top_bar = Layout::horizontal();
         top_bar.add_child("Help".fg(Fg::Hex(0x303030)), Constrain::Min(0));
 
         let border = Border::new(help, true).top_bar(top_bar);
         let mut wrapper = Layout::vertical().center();
-        wrapper.add_child(border, Constrain::Length(13));
+        wrapper.add_child(border, Constrain::Length(14));
 
         let mut layout = Layout::horizontal().center();
         layout.add_child(wrapper, Constrain::Length(40));
