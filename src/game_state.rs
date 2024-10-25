@@ -6,9 +6,8 @@ pub enum GameState {
     Win,
 }
 
-/// Represents which game screen is currently displayed
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum GameScreen {
-    Game,
-    Help,
+impl GameState {
+    pub fn is_playing(&self) -> bool {
+        *self == Self::Playing
+    }
 }

@@ -1,49 +1,40 @@
-use std::io::{stdout, Write};
-
+use app::App;
 use args::Difficulty;
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use error::Error;
-use game::Game;
-use tui::diff_picker::diff_picker;
+use termint::{enums::Color, geometry::Vec2, widgets::StrSpanExtension};
 
 use crate::args::Args;
 
+mod app;
 mod args;
 mod board;
 mod error;
-mod game;
 mod game_state;
 mod tui;
 
-fn main() -> Result<(), String> {
+fn main() {
+    if let Err(e) = run() {
+        eprintln!("{} {}", "Error:".fg(Color::Red), e);
+        std::process::exit(1);
+    };
+}
+
+fn run() -> Result<(), Error> {
     let args = Args::parse(std::env::args())?;
     if args.help {
         return Ok(());
     }
 
-    // Saves screen, clears screen and hides cursor
-    print!("\x1b[?1049h\x1b[2J\x1b[?25l");
-    _ = stdout().flush();
-    _ = start_game(args);
-    // Restores screen
-    print!("\x1b[?1049l\x1b[?25h");
-    _ = stdout().flush();
-    Ok(())
+    let mut app = App::new(get_diff(args.diff));
+    app.run()
 }
 
-fn start_game(args: Args) -> Result<(), Error> {
-    enable_raw_mode()?;
-    let diff = match args.diff {
-        Some(diff) => diff,
-        None => diff_picker()?,
-    };
-    let mut game = match diff {
-        Difficulty::Easy => Game::new(9, 9, 10),
-        Difficulty::Medium => Game::new(16, 16, 40),
-        Difficulty::Hard => Game::new(30, 16, 99),
-        Difficulty::Custom(w, h, m) => Game::new(w, h, m),
-    };
-
-    _ = game.game_loop();
-    Ok(disable_raw_mode()?)
+fn get_diff(diff: Option<Difficulty>) -> Option<(Vec2, usize)> {
+    match diff? {
+        Difficulty::Easy => (Vec2::new(9, 9), 10),
+        Difficulty::Medium => (Vec2::new(16, 16), 40),
+        Difficulty::Hard => (Vec2::new(30, 16), 99),
+        Difficulty::Custom(w, h, m) => (Vec2::new(w, h), m),
+    }
+    .into()
 }
