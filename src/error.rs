@@ -8,6 +8,8 @@ pub enum Error {
     IOErr(#[from] std::io::Error),
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+    #[error(transparent)]
+    Pareg(#[from] pareg::ArgError),
     #[error("{0}")]
     Msg(String),
     #[error("exit")]

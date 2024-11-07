@@ -5,9 +5,13 @@ use std::{
 
 use args::Difficulty;
 use config::Config;
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
+use crossterm::terminal::{
+    disable_raw_mode, enable_raw_mode, is_raw_mode_enabled,
+};
 use error::Result;
 use game::Game;
+use help::print_help;
+use pareg::Pareg;
 use termint::{enums::fg::Fg, widgets::span::StrSpanExtension};
 use tui::diff_picker::diff_picker;
 
@@ -19,16 +23,19 @@ mod config;
 mod error;
 mod game;
 mod game_state;
+mod help;
 mod tui;
 
 fn main() -> ExitCode {
     match run() {
         Ok(_) => ExitCode::SUCCESS,
         Err(e) => {
-            _ = disable_raw_mode();
-            // Restores screen
-            print!("\x1b[?1049l\x1b[?25h");
-            _ = stdout().flush();
+            if is_raw_mode_enabled().unwrap_or_default() {
+                _ = disable_raw_mode();
+                // Restores screen
+                print!("\x1b[?1049l\x1b[?25h");
+                _ = stdout().flush();
+            }
             eprintln!("{} {}", "Error:".fg(Fg::Red), e);
             ExitCode::FAILURE
         }
@@ -36,8 +43,9 @@ fn main() -> ExitCode {
 }
 
 fn run() -> Result<()> {
-    let args = Args::parse(std::env::args())?;
+    let args = Args::parse(Pareg::args())?;
     if args.help {
+        print_help();
         return Ok(());
     }
 
