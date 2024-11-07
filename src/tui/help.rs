@@ -17,7 +17,7 @@ use super::raw_span::RawSpan;
 
 impl App {
     /// Renders help page
-    pub fn render_help(&self) -> Result<(), Error> {
+    pub fn render_help(&self) -> Layout {
         let mut help = Layout::vertical().padding((1, 2));
         help.add_child(
             Self::help_item("←↑↓→", 11, "cursor movement"),
@@ -58,8 +58,10 @@ impl App {
         let mut layout = Layout::horizontal().center();
         layout.add_child(wrapper, Constrain::Length(40));
 
-        self.term.render(layout)?;
-        Ok(())
+        if self.size.x < 40 || self.size.y < 14 {
+            layout = Self::small_screen();
+        }
+        layout
     }
 
     /// Key listener for help page
@@ -72,7 +74,7 @@ impl App {
             }
             _ => {}
         }
-        self.render()?;
+        self.render();
         Ok(())
     }
 }

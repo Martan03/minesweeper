@@ -1,3 +1,5 @@
+use std::io::{stdout, Write};
+
 use crossterm::event::{KeyCode, KeyEvent};
 use termint::{
     enums::fg::Fg,
@@ -16,7 +18,7 @@ use crate::{
 
 impl App {
     /// Renders the difficulty picker screen
-    pub fn render_picker(&self) -> Result<(), Error> {
+    pub fn render_picker(&self) -> Layout {
         let cur = self.picker_cur;
 
         let mut layout = Layout::vertical();
@@ -32,8 +34,10 @@ impl App {
         let mut main = Layout::horizontal().center();
         main.add_child(wrapper, Constrain::Min(0));
 
-        self.term.render(main)?;
-        Ok(())
+        if self.size.x < 19 || self.size.y < 14 {
+            main = Self::small_screen();
+        }
+        main
     }
 
     /// Listens to keyboard events when in difficulty screen
@@ -45,7 +49,8 @@ impl App {
             KeyCode::Esc | KeyCode::Char('q') => return Err(Error::ExitErr),
             _ => return Ok(()),
         };
-        self.render()
+        self.render();
+        Ok(())
     }
 }
 
@@ -59,6 +64,9 @@ impl App {
         };
         let (w, h, m) = dif.config();
         self.board = Board::new(w, h, m);
+
+        print!("\x1b[H\x1b[J");
+        _ = stdout().flush();
         self.screen = Screen::Game;
     }
 }

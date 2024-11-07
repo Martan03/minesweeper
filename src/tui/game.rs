@@ -1,3 +1,5 @@
+use std::io::{stdout, Write};
+
 use crossterm::event::{KeyCode, KeyEvent};
 use termint::{
     enums::{bg::Bg, fg::Fg},
@@ -15,7 +17,7 @@ use super::widgets::border::Border;
 
 impl App {
     /// Renders the game screen
-    pub fn render_game(&self) -> Result<(), Error> {
+    pub fn render_game(&self) -> Layout {
         let mut bot_bar = Layout::horizontal();
         bot_bar.add_child(
             "🛈 Press i for help".fg(Fg::Hex(0x303030)),
@@ -35,8 +37,12 @@ impl App {
         let mut main = Layout::horizontal().center();
         main.add_child(layout, Constrain::Length(self.board.width * 6 + 7));
 
-        self.term.render(main)?;
-        Ok(())
+        if self.board.width * 6 + 9 >= self.size.x
+            || self.board.height * 3 + 6 >= self.size.y
+        {
+            main = Self::small_screen();
+        }
+        main
     }
 
     /// Listens to keyboard events when in game screen
@@ -64,15 +70,24 @@ impl App {
                 self.board.reset();
                 self.state = GameState::Playing;
             }
-            KeyCode::Char('i') => self.screen = Screen::Help,
-            KeyCode::Tab => self.screen = Screen::Picker,
+            KeyCode::Char('i') => {
+                print!("\x1b[H\x1b[J");
+                _ = stdout().flush();
+                self.screen = Screen::Help;
+            }
+            KeyCode::Tab => {
+                print!("\x1b[H\x1b[J");
+                _ = stdout().flush();
+                self.screen = Screen::Picker;
+            }
             KeyCode::Up => self.board.cur_up(),
             KeyCode::Down => self.board.cur_down(),
             KeyCode::Left => self.board.cur_left(),
             KeyCode::Right => self.board.cur_right(),
             _ => return Ok(()),
         }
-        self.render()
+        self.render();
+        Ok(())
     }
 }
 

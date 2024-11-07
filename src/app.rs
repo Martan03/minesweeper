@@ -9,9 +9,9 @@ use crossterm::{
 };
 use termint::{
     enums::modifier::Modifier,
-    geometry::{constrain::Constrain, text_align::TextAlign},
+    geometry::{constrain::Constrain, coords::Coords, text_align::TextAlign},
     term::Term,
-    widgets::{layout::Layout, span::StrSpanExtension},
+    widgets::{layout::Layout, span::StrSpanExtension, widget::Widget},
 };
 
 use crate::{
@@ -26,7 +26,7 @@ pub struct App {
     pub board: Board,
     pub state: GameState,
     pub screen: Screen,
-    pub term: Term,
+    pub size: Coords,
     pub picker_cur: usize,
 }
 
@@ -44,7 +44,9 @@ impl App {
             board,
             state: GameState::Playing,
             screen,
-            term: Term::new(),
+            size: Term::get_size()
+                .map(|(w, h)| Coords::new(w, h))
+                .unwrap_or(Coords::new(0, 0)),
             picker_cur: 0,
         }
     }
@@ -71,7 +73,7 @@ impl App {
 
     /// Main loop of the [`App`]
     fn main_loop(&mut self) -> Result<(), Error> {
-        self.render()?;
+        self.render();
         loop {
             if poll(Duration::from_millis(100))? {
                 self.event()?;
@@ -80,19 +82,27 @@ impl App {
     }
 
     /// Renders the [`App`]
-    pub fn render(&mut self) -> Result<(), Error> {
-        match self.screen {
+    pub fn render(&mut self) {
+        let layout = match self.screen {
             Screen::Game => self.render_game(),
             Screen::Picker => self.render_picker(),
             Screen::Help => self.render_help(),
-        }
+        };
+        layout.render(&Coords::new(1, 1), &self.size);
     }
 
     /// Handles key listening of the [`App`]
     fn event(&mut self) -> Result<(), Error> {
         match read()? {
             Event::Key(e) => self.key_handler(e),
-            Event::Resize(_, _) => self.render(),
+            Event::Resize(w, h) => {
+                print!("\x1b[H\x1b[J");
+                _ = stdout().flush();
+
+                self.size = Coords::new(w as usize, h as usize);
+                self.render();
+                Ok(())
+            }
             _ => Ok(()),
         }
     }
@@ -107,7 +117,7 @@ impl App {
     }
 
     /// Small screen to be displayed, when game can't fit
-    fn _small_screen() -> Layout {
+    pub fn small_screen() -> Layout {
         let mut layout = Layout::vertical().center();
         layout.add_child(
             "Terminal too small!"
@@ -129,7 +139,9 @@ impl Default for App {
             board: Board::new(1, 1, 1),
             state: GameState::Playing,
             screen: Screen::Picker,
-            term: Term::new(),
+            size: Term::get_size()
+                .map(|(w, h)| Coords::new(w, h))
+                .unwrap_or(Coords::new(0, 0)),
             picker_cur: 0,
         }
     }
