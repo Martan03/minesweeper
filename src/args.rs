@@ -4,6 +4,8 @@ use termint::{
     widgets::{grad::Grad, span::StrSpanExtension},
 };
 
+use crate::error::Error;
+
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub enum Difficulty {
     Easy,
@@ -23,7 +25,7 @@ impl Args {
     /// Parses given args and checks contraints
     /// ### Returns:
     /// - Constructed [`Args`]
-    pub fn parse(args: std::env::Args) -> Result<Self, String> {
+    pub fn parse(args: std::env::Args) -> Result<Self, Error> {
         let mut parsed = Args::default();
         let args_len = args.len();
 
@@ -38,7 +40,7 @@ impl Args {
                     Args::help(args_len)?;
                     return Ok(parsed);
                 }
-                _ => return Err("Unknown argument given".to_string()),
+                _ => return Err("Unknown argument given".into()),
             }
         }
 

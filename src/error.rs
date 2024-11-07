@@ -1,10 +1,23 @@
+use thiserror::Error;
+
+#[derive(Debug, Error)]
 pub enum Error {
-    IOErr(std::io::Error),
+    #[error(transparent)]
+    IOErr(#[from] std::io::Error),
+    #[error("{0}")]
+    Msg(String),
+    #[error("exit")]
     ExitErr,
 }
 
-impl From<std::io::Error> for Error {
-    fn from(value: std::io::Error) -> Self {
-        Self::IOErr(value)
+impl From<String> for Error {
+    fn from(value: String) -> Self {
+        Self::Msg(value)
+    }
+}
+
+impl From<&str> for Error {
+    fn from(value: &str) -> Self {
+        Self::Msg(value.to_string())
     }
 }

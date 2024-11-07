@@ -1,9 +1,13 @@
-use std::io::{stdout, Write};
+use std::{
+    io::{stdout, Write},
+    process::ExitCode,
+};
 
 use args::Difficulty;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use error::Error;
 use game::Game;
+use termint::{enums::fg::Fg, widgets::span::StrSpanExtension};
 use tui::diff_picker::diff_picker;
 
 use crate::args::Args;
@@ -15,7 +19,17 @@ mod game;
 mod game_state;
 mod tui;
 
-fn main() -> Result<(), String> {
+fn main() -> ExitCode {
+    match run() {
+        Ok(_) => ExitCode::SUCCESS,
+        Err(e) => {
+            eprintln!("{} {}", "Error:".fg(Fg::Red), e);
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn run() -> Result<(), Error> {
     let args = Args::parse(std::env::args())?;
     if args.help {
         return Ok(());
@@ -24,7 +38,7 @@ fn main() -> Result<(), String> {
     // Saves screen, clears screen and hides cursor
     print!("\x1b[?1049h\x1b[2J\x1b[?25l");
     _ = stdout().flush();
-    _ = start_game(args);
+    start_game(args)?;
     // Restores screen
     print!("\x1b[?1049l\x1b[?25h");
     _ = stdout().flush();
