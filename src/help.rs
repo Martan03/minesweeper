@@ -13,13 +13,18 @@ pub fn print_help() {
     );
     help!(
         "Usage":
-        "minesweeper" => "Opens TUI difficulty picker\n"
-        "minesweeper" ["flags"] => "Start the game with given options\n"
+        "minesweeper" =>
+            "Starts game with the default dificulity or opens TUI difficulty \
+            picker.\n"
+        "minesweeper config" =>
+            "Opens the configuration file in the default editor.\n"
+        "minesweeper help" => "Prints this help.\n"
+        "minesweeper" ["flags"] => "Start the game with given options.\n"
         "Flags":
         "-d --diff --difficulty" ["easy|medium|hard"] =>
-            "Sets the game difficulty\n"
+            "Sets the game difficulty.\n"
         "-c --custom" ["width"] ["height"] ["mines"] =>
-            "Creates custom game with given size and amount of mines\n"
-        "-h --help" => "Displays this help"
+            "Creates custom game with given size and amount of mines.\n"
+        "-h --help" => "Displays this help."
     );
 }

@@ -1,9 +1,6 @@
 use std::time::Duration;
 
-use crossterm::{
-    event::{poll, read, Event, KeyCode, KeyEvent},
-    terminal::disable_raw_mode,
-};
+use crossterm::event::{poll, read, Event, KeyCode, KeyEvent};
 use termint::{
     enums::fg::Fg,
     geometry::{constrain::Constrain, coords::Coords, text_align::TextAlign},
@@ -79,7 +76,6 @@ fn dp_listener(
         KeyCode::Down => *cur += (*cur < 2) as usize,
         KeyCode::Enter => return Ok(Some(*cur)),
         KeyCode::Esc | KeyCode::Char('q') => {
-            disable_raw_mode()?;
             return Err(Error::ExitErr);
         }
         _ => return Ok(None),

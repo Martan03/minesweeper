@@ -16,10 +16,18 @@ pub enum Difficulty {
     },
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+pub enum Action {
+    #[default]
+    Play,
+    Help,
+    Config,
+}
+
 #[derive(Debug, Default)]
 pub struct Args {
     pub diff: Option<Difficulty>,
-    pub help: bool,
+    pub action: Action,
 }
 
 impl Args {
@@ -40,7 +48,8 @@ impl Args {
                         mines: args.next_arg()?,
                     })
                 }
-                "-h" | "--help" => parsed.help = true,
+                "config" => parsed.action = Action::Config,
+                "-h" | "--help" | "help" => parsed.action = Action::Help,
                 _ => return Err(args.err_unknown_argument().into()),
             }
         }

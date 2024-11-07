@@ -1,10 +1,9 @@
 use std::{
-    io::{stdout, Write},
-    process::ExitCode,
+    env, fs::create_dir_all, io::{stdout, Write}, process::{Command, ExitCode}
 };
 
-use args::Difficulty;
-use config::Config;
+use args::{Action, Difficulty};
+use config::{config_dir, config_file, Config};
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, is_raw_mode_enabled,
 };
@@ -30,7 +29,7 @@ fn main() -> ExitCode {
     match run() {
         Ok(_) => ExitCode::SUCCESS,
         Err(e) => {
-            if is_raw_mode_enabled().unwrap_or_default() {
+            if is_raw_mode_enabled().unwrap_or(true) {
                 _ = disable_raw_mode();
                 // Restores screen
                 print!("\x1b[?1049l\x1b[?25h");
@@ -44,14 +43,17 @@ fn main() -> ExitCode {
 
 fn run() -> Result<()> {
     let args = Args::parse(Pareg::args())?;
-    if args.help {
-        print_help();
-        return Ok(());
+    match args.action {
+        Action::Play => play(args),
+        Action::Help => {
+            print_help();
+            Ok(())
+        }
+        Action::Config => config(),
     }
+}
 
-    // Saves screen, clears screen and hides cursor
-    print!("\x1b[?1049h\x1b[2J\x1b[?25l");
-    _ = stdout().flush();
+fn play(args: Args) -> Result<()> {
     start_game(args, Config::from_default_json())?;
     _ = stdout().flush();
     Ok(())
@@ -59,6 +61,9 @@ fn run() -> Result<()> {
 
 fn start_game(args: Args, conf: Config) -> Result<()> {
     enable_raw_mode()?;
+    print!("\x1b[?1049h\x1b[2J\x1b[?25l");
+    _ = stdout().flush();
+
     let diff = match args.diff.or(conf.default_difficulty) {
         Some(diff) => diff,
         None => diff_picker()?,
@@ -75,4 +80,16 @@ fn start_game(args: Args, conf: Config) -> Result<()> {
     };
 
     game.game_loop()
+}
+
+fn config() -> Result<()> {
+    let editor = env::var("EDITOR").unwrap_or("vi".to_string());
+    create_dir_all(config_dir())?;
+    let file = config_file();
+    if !file.exists() {
+        Config::default().to_default_json()?;
+    }
+
+    Command::new(editor).arg(file).spawn()?.wait()?;
+    Ok(())
 }
