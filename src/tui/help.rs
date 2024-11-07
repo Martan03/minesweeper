@@ -1,26 +1,23 @@
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyEvent};
 use termint::{
     enums::{bg::Bg, fg::Fg},
-    geometry::{constrain::Constrain, coords::Coords},
+    geometry::constrain::Constrain,
     widgets::{
         layout::Layout,
         spacer::Spacer,
         span::{Span, StrSpanExtension},
-        widget::Widget,
     },
 };
 
 use crate::{
-    error::Error, game::Game, game_state::GameScreen,
-    tui::widgets::border::Border,
+    app::App, error::Error, game_state::Screen, tui::widgets::border::Border,
 };
 
 use super::raw_span::RawSpan;
 
-/// Help page
-impl Game {
+impl App {
     /// Renders help page
-    pub fn render_help(&self) {
+    pub fn render_help(&self) -> Layout {
         let mut help = Layout::vertical().padding((1, 2));
         help.add_child(
             Self::help_item("←↑↓→", 11, "cursor movement"),
@@ -61,27 +58,28 @@ impl Game {
         let mut layout = Layout::horizontal().center();
         layout.add_child(wrapper, Constrain::Length(40));
 
-        print!("\x1b[H\x1b[J");
-        layout.render(
-            &Coords::new(1, 1),
-            &Coords::new(self.size.0, self.size.1),
-        );
+        if self.size.x < 40 || self.size.y < 14 {
+            layout = Self::small_screen();
+        }
+        layout
     }
 
     /// Key listener for help page
-    pub fn help_key_listen(&mut self, code: KeyCode) -> Result<(), Error> {
-        match code {
+    pub fn listen_help(&mut self, event: KeyEvent) -> Result<(), Error> {
+        match event.code {
             KeyCode::Esc | KeyCode::Char('q') => return Err(Error::ExitErr),
             KeyCode::Char('i') => {
                 print!("\x1b[H\x1b[J");
-                self.screen = GameScreen::Game
+                self.screen = Screen::Game
             }
             _ => {}
         }
         self.render();
         Ok(())
     }
+}
 
+impl App {
     /// Gets help item layout
     fn help_item(key: &str, key_len: usize, action: &str) -> Layout {
         let mut layout = Layout::horizontal();
