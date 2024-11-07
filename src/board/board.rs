@@ -22,9 +22,8 @@ pub struct Board {
 impl Board {
     /// Creates new [`Board`] with given size
     pub fn new(width: usize, height: usize, mines: usize) -> Self {
-        let mut cells = vec![Cell::new(0x00); width * height];
-        cells[0].sel();
-        Self {
+        let cells = vec![Cell::new(0x00); width * height];
+        let mut board = Self {
             width,
             height,
             cells,
@@ -33,7 +32,12 @@ impl Board {
             cur: center_of(width, height),
             rev: 0,
             flags: 0,
+        };
+
+        if width > 0 && height > 0 {
+            board.cells[board.cur.x + board.cur.y * width].sel();
         }
+        board
     }
 
     /// Gets [`Board`] as termint Layout element
@@ -115,38 +119,35 @@ impl Board {
         self.mines as isize - self.flags as isize
     }
 
+    /// Centers the cursor
     pub fn center(&mut self) {
-        self.cur = center_of(self.width, self.height);
+        self.select(center_of(self.width, self.height));
     }
 
     pub fn cur_up(&mut self) {
-        self.cells[self.cur.x + self.cur.y * self.width].sel();
-        self.cur.y = self.cur.y.checked_sub(1).unwrap_or(self.height - 1);
-        self.cells[self.cur.x + self.cur.y * self.width].sel();
+        let y = self.cur.y.checked_sub(1).unwrap_or(self.height - 1);
+        self.select(Coords::new(self.cur.x, y));
     }
 
     pub fn cur_down(&mut self) {
-        self.cells[self.cur.x + self.cur.y * self.width].sel();
-        self.cur.y += 1;
+        let mut y = self.cur.y + 1;
         if self.cur.y >= self.height {
-            self.cur.y = 0;
+            y = 0;
         }
-        self.cells[self.cur.x + self.cur.y * self.width].sel();
+        self.select(Coords::new(self.cur.x, y));
     }
 
     pub fn cur_left(&mut self) {
-        self.cells[self.cur.x + self.cur.y * self.width].sel();
-        self.cur.x = self.cur.x.checked_sub(1).unwrap_or(self.width - 1);
-        self.cells[self.cur.x + self.cur.y * self.width].sel();
+        let x = self.cur.x.checked_sub(1).unwrap_or(self.width - 1);
+        self.select(Coords::new(x, self.cur.y));
     }
 
     pub fn cur_right(&mut self) {
-        self.cells[self.cur.x + self.cur.y * self.width].sel();
-        self.cur.x += 1;
+        let mut x = self.cur.x + 1;
         if self.cur.x >= self.width {
-            self.cur.x = 0;
+            x = 0;
         }
-        self.cells[self.cur.x + self.cur.y * self.width].sel();
+        self.select(Coords::new(x, self.cur.y));
     }
 }
 
@@ -176,6 +177,13 @@ impl Board {
             self.cells[id].set(0xff);
             self.inc_neighbors(id);
         }
+    }
+
+    /// Selectets cell on given position
+    fn select(&mut self, pos: Coords) {
+        self.cells[self.cur.x + self.cur.y * self.width].sel();
+        self.cur = pos;
+        self.cells[self.cur.x + self.cur.y * self.width].sel();
     }
 
     /// Increments value of cell neighbors
@@ -270,5 +278,5 @@ impl Board {
 }
 
 fn center_of(x: usize, y: usize) -> Coords {
-    Coords::new((x - 1) / 2, (y - 1) / 2)
+    Coords::new(x.saturating_sub(1) / 2, y.saturating_sub(1) / 2)
 }

@@ -37,7 +37,7 @@ impl App {
                 let (w, h, m) = dif.config();
                 (Board::new(w, h, m), Screen::Game)
             }
-            None => (Board::new(1, 1, 1), Screen::Picker),
+            None => (Board::new(0, 0, 0), Screen::Picker),
         };
 
         Self {
