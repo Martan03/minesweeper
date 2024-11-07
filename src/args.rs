@@ -16,6 +16,22 @@ pub enum Difficulty {
     },
 }
 
+impl Difficulty {
+    /// Gets size and number of mines
+    pub fn config(&self) -> (usize, usize, usize) {
+        match self {
+            Difficulty::Easy => (9, 9, 10),
+            Difficulty::Medium => (16, 16, 40),
+            Difficulty::Hard => (30, 16, 99),
+            Difficulty::Custom {
+                width,
+                height,
+                mines,
+            } => (*width, *height, *mines),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Default)]
 pub enum Action {
     #[default]

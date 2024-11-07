@@ -12,15 +12,14 @@ use game::Game;
 use help::print_help;
 use pareg::Pareg;
 use termint::{enums::fg::Fg, widgets::span::StrSpanExtension};
-use tui::diff_picker::diff_picker;
 
 use crate::args::Args;
 
+mod app;
 mod args;
 mod board;
 mod config;
 mod error;
-mod game;
 mod game_state;
 mod help;
 mod tui;
@@ -29,12 +28,6 @@ fn main() -> ExitCode {
     match run() {
         Ok(_) => ExitCode::SUCCESS,
         Err(e) => {
-            if is_raw_mode_enabled().unwrap_or(true) {
-                _ = disable_raw_mode();
-                // Restores screen
-                print!("\x1b[?1049l\x1b[?25h");
-                _ = stdout().flush();
-            }
             eprintln!("{} {}", "Error:".fg(Fg::Red), e);
             ExitCode::FAILURE
         }
