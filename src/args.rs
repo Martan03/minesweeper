@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use termint::{
     enums::fg::Fg,
     help,
@@ -6,13 +7,17 @@ use termint::{
 
 use crate::error::Error;
 
-#[derive(Debug, PartialEq, Eq, Clone, Default)]
+#[derive(Debug, PartialEq, Eq, Clone, Default, Serialize, Deserialize)]
 pub enum Difficulty {
     Easy,
     #[default]
     Medium,
     Hard,
-    Custom(usize, usize, usize),
+    Custom {
+        width: usize,
+        height: usize,
+        mines: usize,
+    },
 }
 
 #[derive(Debug, Default)]
@@ -77,7 +82,11 @@ impl Args {
         let height = Args::get_num(args)?;
         let mines = Args::get_num(args)?;
 
-        self.diff = Some(Difficulty::Custom(width, height, mines));
+        self.diff = Some(Difficulty::Custom {
+            width,
+            height,
+            mines,
+        });
         Ok(())
     }
 
