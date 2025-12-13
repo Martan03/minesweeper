@@ -16,9 +16,9 @@ impl App {
     /// Renders difficulty picker
     pub fn render_dp(&mut self) -> Element {
         let mut layout = Layout::vertical();
-        layout.push(self.get_button("Easy", 0), Constraint::Min(0));
-        layout.push(self.get_button("Medium", 1), Constraint::Min(0));
-        layout.push(self.get_button("Hard", 2), Constraint::Min(0));
+        layout.push(self.get_button("Easy", 0), Constraint::Min(3));
+        layout.push(self.get_button("Medium", 1), Constraint::Min(3));
+        layout.push(self.get_button("Hard", 2), Constraint::Min(3));
 
         let border = Border::new(layout, false)
             .top_bar("Minesweeper".fg(Color::Hex(0x303030)));
@@ -26,7 +26,7 @@ impl App {
         let mut wrapper = Layout::vertical().center();
         wrapper.push(border, Constraint::Min(0));
         let mut main = Layout::horizontal().center();
-        main.push(wrapper, Constraint::Min(0));
+        main.push(wrapper, Constraint::Min(20));
         main.into()
     }
 

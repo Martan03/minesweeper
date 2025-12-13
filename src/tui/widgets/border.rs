@@ -1,7 +1,7 @@
 use termint::{
     buffer::Buffer,
     enums::Color,
-    geometry::{Rect, Vec2},
+    geometry::{Padding, Rect, Vec2},
     style::Style,
     widgets::{cache::Cache, Element, Widget},
 };
@@ -47,16 +47,14 @@ impl Border {
 
 impl Widget for Border {
     fn render(&self, buffer: &mut Buffer, rect: Rect, cache: &mut Cache) {
-        self.render_inner(buffer, rect);
+        self.render_inner(buffer, rect, cache);
 
-        let crect = rect.inner((2, 4, 2, 3));
+        let crect = rect.inner(self.content_padding());
         self.content.render(buffer, crect, &mut cache.children[0]);
     }
 
     fn height(&self, size: &Vec2) -> usize {
-        self.content.height(size) + 4
-        // + self.top_bar.is_some() as usize
-        // + self.bot_bar.is_some() as usize
+        self.content.height(size) + self.bar_height()
     }
 
     fn width(&self, size: &Vec2) -> usize {
@@ -64,22 +62,29 @@ impl Widget for Border {
     }
 
     fn children(&self) -> Vec<&Element> {
-        vec![&self.content]
-        // if let Some(child) = self.top_bar.as_ref() {
-        //     children.push(child);
-        // }
-        // if let Some(child) = self.bot_bar.as_ref() {
-        //     children.push(child);
-        // }
+        let mut children = vec![&self.content];
+        if let Some(child) = self.top_bar.as_ref() {
+            children.push(child);
+        }
+        if let Some(child) = self.bot_bar.as_ref() {
+            children.push(child);
+        }
+        children
     }
 }
 
 impl Border {
-    fn render_inner(&self, buffer: &mut Buffer, rect: Rect) {
+    fn render_inner(
+        &self,
+        buffer: &mut Buffer,
+        rect: Rect,
+        cache: &mut Cache,
+    ) {
         let (bc, ff, sn) = Self::get_colors();
 
         let hframe_width = rect.width().saturating_sub(7);
         let hframe = "▄".repeat(hframe_width);
+        let ehframe = " ".repeat(rect.width().saturating_sub(2));
 
         let ffbc = Style::new().bg(ff).fg(bc);
         let bcsn = Style::new().bg(bc).fg(sn);
@@ -91,6 +96,26 @@ impl Border {
         buffer.set_str_styled("▄", &Vec2::new(end, pos.y), bcsn);
 
         pos.y += 1;
+        let crect =
+            Rect::new(pos.x + 3, pos.y, rect.width().saturating_sub(7), 1);
+        let mut cache_id = 1;
+        if let Some(top) = &self.top_bar {
+            buffer.set_str_styled(
+                &ehframe,
+                &Vec2::new(pos.x + 1, pos.y),
+                bcsn,
+            );
+            buffer[pos] = buffer[pos].bg(ff);
+            buffer.set_str_styled(
+                " ",
+                &Vec2::new(end, pos.y),
+                Style::new().bg(sn),
+            );
+            top.render(buffer, crect, &mut cache.children[cache_id]);
+            cache_id += 1;
+            pos.y += 1;
+        }
+
         buffer.set_str_styled(" ", &pos, ffbc);
         buffer.set_str_styled(
             format!(" ▗▄{hframe}  "),
@@ -112,7 +137,7 @@ impl Border {
         }
 
         let bgframe = " ".repeat(hframe_width);
-        for _ in 0..rect.height().saturating_sub(4) {
+        for _ in 0..rect.height().saturating_sub(self.bar_height()) {
             pos.y += 1;
 
             buffer.set_str_styled(" ", &pos, ffbc);
@@ -144,6 +169,19 @@ impl Border {
         buffer.set_str_styled(" ", &Vec2::new(end, pos.y), snbc);
 
         pos.y += 1;
+        let crect =
+            Rect::new(pos.x + 3, pos.y, rect.width().saturating_sub(7), 1);
+        if let Some(bot) = &self.bot_bar {
+            buffer.set_str_styled(ehframe, &Vec2::new(pos.x + 1, pos.y), bcsn);
+            buffer[pos] = buffer[pos].bg(ff);
+            buffer.set_str_styled(
+                " ",
+                &Vec2::new(end, pos.y),
+                Style::new().bg(sn),
+            );
+            bot.render(buffer, crect, &mut cache.children[cache_id]);
+            pos.y += 1;
+        }
         buffer.set_str_styled("▄", &pos, ffbc);
         buffer.set_str_styled(
             format!("▄▄{hframe}▄▄▄"),
@@ -151,6 +189,17 @@ impl Border {
             bcsn,
         );
         buffer.set_str_styled(" ", &Vec2::new(end, pos.y), snbc);
+    }
+
+    fn content_padding(&self) -> Padding {
+        let mut padding = Padding::new(2, 4, 2, 3);
+        padding.top += self.top_bar.is_some() as usize;
+        padding.bottom += self.bot_bar.is_some() as usize;
+        padding
+    }
+
+    fn bar_height(&self) -> usize {
+        4 + self.top_bar.is_some() as usize + self.bot_bar.is_some() as usize
     }
 
     fn get_colors() -> (Color, Color, Color) {
