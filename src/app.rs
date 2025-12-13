@@ -11,7 +11,7 @@ use termint::{
     enums::Modifier,
     geometry::{Constraint, TextAlign, Vec2},
     term::Term,
-    widgets::{Layout, StrSpanExtension},
+    widgets::{Layout, ToSpan},
 };
 
 use crate::{board::board_struct::Board, error::Error, game_state::GameState};

@@ -1,11 +1,7 @@
 use std::ops::{Index, IndexMut};
 
 use rand::{thread_rng, Rng};
-use termint::{
-    buffer::Buffer,
-    geometry::{Rect, Vec2},
-    widgets::{Element, Grid, Widget},
-};
+use termint::geometry::Vec2;
 
 use super::cell::{Cell, CellType};
 
@@ -129,24 +125,6 @@ impl Board {
             self.cur.x = 0;
         }
         self.cells[self.cur.x + self.cur.y * self.size.x].sel();
-    }
-}
-
-impl Widget for Board {
-    fn render(&self, buffer: &mut Buffer) {
-        let mut grid = Grid::new(vec![6; self.size.x], vec![3; self.size.y]);
-        for pos in Rect::new(0, 0, self.size.x, self.size.y) {
-            grid.push(self[pos].clone(), pos.x, pos.y);
-        }
-        grid.render(buffer);
-    }
-
-    fn height(&self, _size: &Vec2) -> usize {
-        self.size.y * 3
-    }
-
-    fn width(&self, _size: &Vec2) -> usize {
-        self.size.x * 6
     }
 }
 
@@ -294,17 +272,5 @@ impl IndexMut<usize> for Board {
 impl IndexMut<Vec2> for Board {
     fn index_mut(&mut self, pos: Vec2) -> &mut Self::Output {
         &mut self.cells[pos.x + pos.y * self.size.y]
-    }
-}
-
-impl From<Board> for Element {
-    fn from(value: Board) -> Self {
-        Element::new(value)
-    }
-}
-
-impl From<Board> for Box<dyn Widget> {
-    fn from(value: Board) -> Self {
-        Box::new(value)
     }
 }

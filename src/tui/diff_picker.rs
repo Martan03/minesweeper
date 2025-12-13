@@ -2,7 +2,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use termint::{
     enums::Color,
     geometry::{Constraint, TextAlign, Vec2},
-    widgets::{Element, Layout, Span, StrSpanExtension},
+    widgets::{Element, Layout, ToSpan},
 };
 
 use crate::{
@@ -57,7 +57,7 @@ impl App {
     }
 
     /// Difficulty picker button getter
-    fn get_button(&self, text: &str, id: usize) -> Button<Span> {
+    fn get_button(&self, text: &str, id: usize) -> Button {
         Button::new(text.fg(Color::Hex(0x303030)).align(TextAlign::Center))
             .selected(id == self.picker_state)
     }

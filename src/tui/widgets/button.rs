@@ -1,24 +1,25 @@
 use termint::{
     buffer::{Buffer, Cell},
     enums::Color,
-    geometry::Vec2,
+    geometry::{Rect, Vec2},
     style::Style,
-    widgets::{Element, Widget},
+    widgets::{cache::Cache, Element, Widget},
 };
 
-pub struct Button<T = Element> {
-    content: T,
+#[derive(Debug)]
+pub struct Button {
+    content: Element,
     selected: bool,
 }
 
-impl<T> Button<T>
-where
-    T: Widget,
-{
+impl Button {
     /// Creates new minesweeper style [`Button`]
-    pub fn new(content: T) -> Self {
+    pub fn new<E>(content: E) -> Self
+    where
+        E: Into<Element>,
+    {
         Self {
-            content: content,
+            content: content.into(),
             selected: false,
         }
     }
@@ -36,18 +37,15 @@ where
     }
 }
 
-impl<T> Widget for Button<T>
-where
-    T: Widget,
-{
-    fn render(&self, buffer: &mut Buffer) {
+impl Widget for Button {
+    fn render(&self, buffer: &mut Buffer, rect: Rect, cache: &mut Cache) {
         let (lb, db, w) = self.get_colors();
 
-        let crect = buffer.rect().inner((1, 1, 1, 2));
+        let crect = rect.inner((1, 1, 1, 2));
         let hline = "▄".repeat(crect.width());
 
         let wlb = Style::new().bg(w).fg(lb);
-        let mut pos = *buffer.pos();
+        let mut pos = *rect.pos();
 
         buffer.set_str_styled(format!("▌▗{hline}▛"), &pos, wlb);
         buffer.set_fg(db, &pos);
@@ -73,9 +71,7 @@ where
         );
         buffer.set_fg(w, &pos);
 
-        let mut cbuffer = buffer.subset(crect);
-        self.content.render(&mut cbuffer);
-        buffer.merge(cbuffer);
+        self.content.render(buffer, crect, &mut cache.children[0]);
     }
 
     fn height(&self, _size: &Vec2) -> usize {
@@ -85,12 +81,13 @@ where
     fn width(&self, size: &Vec2) -> usize {
         self.content.width(&Vec2::new(size.x, 1)) + 3
     }
+
+    fn children(&self) -> Vec<&Element> {
+        vec![&self.content]
+    }
 }
 
-impl<T> Button<T>
-where
-    T: Widget,
-{
+impl Button {
     fn get_colors(&self) -> (Color, Color, Color) {
         if self.selected {
             (
@@ -108,20 +105,14 @@ where
     }
 }
 
-impl<W> From<Button<W>> for Box<dyn Widget>
-where
-    W: Widget + 'static,
-{
-    fn from(value: Button<W>) -> Self {
+impl From<Button> for Box<dyn Widget> {
+    fn from(value: Button) -> Self {
         Box::new(value)
     }
 }
 
-impl<W> From<Button<W>> for Element
-where
-    W: Widget + 'static,
-{
-    fn from(value: Button<W>) -> Self {
+impl From<Button> for Element {
+    fn from(value: Button) -> Self {
         Element::new(value)
     }
 }

@@ -1,15 +1,12 @@
 use termint::{
     buffer::Buffer,
     enums::{Color, Modifier},
-    geometry::Vec2,
+    geometry::{Rect, Vec2},
     style::Style,
-    widgets::{Element, Layout, Widget},
+    widgets::{cache::Cache, Element, Widget},
 };
 
-use crate::tui::{
-    raw_span::{RawSpan, RawSpanStrExtension},
-    widgets::button::Button,
-};
+use crate::tui::{raw_span::RawSpan, widgets::button::Button};
 
 /// Enum representing cell type
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -91,14 +88,19 @@ impl Cell {
     pub fn is_flag(&self) -> bool {
         self.cell_type == CellType::Flag
     }
+
+    /// Gets the corresponding cell element
+    pub fn element(&self) -> Element {
+        match self.cell_type {
+            CellType::Visible => self.clone().into(),
+            _ => self.get_hidden(self.sel).into(),
+        }
+    }
 }
 
 impl Widget for Cell {
-    fn render(&self, buffer: &mut Buffer) {
-        match self.cell_type {
-            CellType::Visible => self.render_visible(buffer),
-            _ => self.get_hidden(buffer, self.sel),
-        };
+    fn render(&self, buffer: &mut Buffer, rect: Rect, _cache: &mut Cache) {
+        self.render_visible(buffer, rect);
     }
 
     fn height(&self, _size: &Vec2) -> usize {
@@ -108,10 +110,14 @@ impl Widget for Cell {
     fn width(&self, _size: &Vec2) -> usize {
         7
     }
+
+    fn children(&self) -> Vec<&Element> {
+        vec![]
+    }
 }
 
 impl Cell {
-    fn render_visible(&self, buffer: &mut Buffer) {
+    fn render_visible(&self, buffer: &mut Buffer, rect: Rect) {
         let lb = Color::Hex(0x797979);
         let db = match self.sel {
             true if self.value == 0xfe => Color::Hex(0xd20000),
@@ -120,7 +126,7 @@ impl Cell {
             false => Color::Hex(0xbcbcbc),
         };
 
-        let mut pos = *buffer.pos();
+        let mut pos = *rect.pos();
         buffer.set_str_styled(" ▆▆▆▆▆", &pos, Style::new().bg(lb).fg(db));
 
         pos.y += 1;
@@ -131,26 +137,21 @@ impl Cell {
             Style::new().bg(db).fg(fg),
         );
         buffer.set_bg(lb, &pos);
-        buffer.set_bg(
-            lb,
-            &Vec2::new(pos.x + buffer.width().saturating_sub(1), pos.y),
-        );
 
         pos.y += 1;
         buffer.set_str_styled(" ▂▂▂▂▂", &pos, Style::new().bg(db).fg(lb));
         buffer.set_bg(lb, &pos);
     }
 
-    fn get_hidden(&self, buffer: &mut Buffer, sel: bool) {
-        let btn = Button::new(match self.cell_type {
+    fn get_hidden(&self, sel: bool) -> Button {
+        let text = match self.cell_type {
             CellType::Flag => RawSpan::new(" ▶ ").fg(Color::Hex(0xff0000)),
             CellType::WrongFlag => RawSpan::new(" ▶ ")
                 .modifier(Modifier::STRIKED)
                 .fg(Color::Hex(0xff0000)),
             _ => RawSpan::new("   "),
-        })
-        .selected(sel);
-        btn.render(buffer);
+        };
+        Button::new(text).selected(sel)
     }
 
     fn get_value(&self) -> (&str, Color) {

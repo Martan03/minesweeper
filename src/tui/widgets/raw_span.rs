@@ -1,9 +1,9 @@
 use termint::{
     buffer::Buffer,
-    enums::Color,
-    geometry::{Padding, Vec2},
+    enums::{Color, Modifier},
+    geometry::{Rect, Vec2},
     style::Style,
-    widgets::{Element, Widget},
+    widgets::{cache::Cache, Element, Widget},
 };
 
 /// Widget that prints text on given coordinates
@@ -11,6 +11,7 @@ use termint::{
 /// It doesn't implement any wrapping or anything else, it is used only for
 /// raw printing - for example using len() on emojis returns 4 and Span widget
 /// adds ellipsis and doesn't print the emoji, when the width is less then 4
+#[derive(Debug, Clone)]
 pub struct RawSpan {
     text: String,
     style: Style,
@@ -53,22 +54,16 @@ impl RawSpan {
     }
 
     /// Sets [`RawSpan`] modifier
-    pub fn modifier(mut self, modifier: u8) -> Self {
+    pub fn modifier(mut self, modifier: Modifier) -> Self {
         self.style = self.style.modifier(modifier);
         self
     }
 }
 
 impl Widget for RawSpan {
-    fn render(&self, buffer: &mut Buffer) {
-        let mut offset = 0;
-        for line in self.text.lines() {
-            let crect = buffer.rect().inner(Padding::top(offset));
-            let mut cbuffer = buffer.subset(crect);
-            offset = self.render_line(&mut cbuffer, line, offset);
-        }
+    fn render(&self, buffer: &mut Buffer, rect: Rect, _cache: &mut Cache) {
         let stext: String = self.text.chars().take(buffer.area()).collect();
-        buffer.set_str_styled(&stext, &buffer.pos().clone(), self.style);
+        buffer.set_str_styled(&stext, rect.pos(), self.style);
     }
 
     fn height(&self, size: &Vec2) -> usize {
@@ -91,27 +86,6 @@ impl Widget for RawSpan {
     }
 }
 
-impl RawSpan {
-    /// Renders single line of the [`RawSpan`]
-    fn render_line(
-        &self,
-        buffer: &mut Buffer,
-        text: &str,
-        offset: usize,
-    ) -> usize {
-        if buffer.area() == 0 {
-            return offset;
-        }
-        let stext: String = text.chars().take(buffer.area()).collect();
-        buffer.set_str_styled(
-            &stext,
-            &Vec2::new(buffer.x(), buffer.y()),
-            self.style,
-        );
-        (stext.chars().count() as f32 / buffer.width() as f32).ceil() as usize
-    }
-}
-
 impl From<RawSpan> for Element {
     fn from(value: RawSpan) -> Self {
         Element::new(value)
@@ -121,33 +95,5 @@ impl From<RawSpan> for Element {
 impl From<RawSpan> for Box<dyn Widget> {
     fn from(value: RawSpan) -> Self {
         Box::new(value)
-    }
-}
-
-pub trait RawSpanStrExtension {
-    /// Creates [`RawSpan`] from string and sets its fg to given color
-    fn fg<T>(self, fg: T) -> RawSpan
-    where
-        T: Into<Option<Color>>;
-
-    /// Creates [`RawSpan`] from string and sets its bg to given color
-    fn bg<T>(self, bg: T) -> RawSpan
-    where
-        T: Into<Option<Color>>;
-}
-
-impl RawSpanStrExtension for &str {
-    fn fg<T>(self, fg: T) -> RawSpan
-    where
-        T: Into<Option<Color>>,
-    {
-        RawSpan::new(self).fg(fg)
-    }
-
-    fn bg<T>(self, bg: T) -> RawSpan
-    where
-        T: Into<Option<Color>>,
-    {
-        RawSpan::new(self).bg(bg)
     }
 }

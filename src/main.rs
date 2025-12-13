@@ -1,7 +1,7 @@
 use app::App;
 use args::Difficulty;
 use error::Error;
-use termint::{enums::Color, geometry::Vec2, widgets::StrSpanExtension};
+use termint::{enums::Color, geometry::Vec2, widgets::ToSpan};
 
 use crate::args::Args;
 

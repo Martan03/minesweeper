@@ -1,8 +1,8 @@
 use crossterm::event::{KeyCode, KeyEvent};
 use termint::{
     enums::Color,
-    geometry::{Constraint, TextAlign},
-    widgets::{Element, Layout, Spacer, StrSpanExtension},
+    geometry::{Constraint, Rect, TextAlign},
+    widgets::{Element, Grid, Layout, Spacer, ToSpan},
 };
 
 use crate::{
@@ -18,7 +18,14 @@ impl App {
         let help = "🛈 Press i for help"
             .fg(Color::Hex(0x303030))
             .align(TextAlign::Center);
-        let border = Border::new(self.board.clone(), false)
+
+        let bsize = &self.board.size;
+        let mut grid = Grid::new(vec![6; bsize.x], vec![3; bsize.y]);
+        for pos in Rect::new(0, 0, bsize.x, bsize.y) {
+            grid.push(self.board[pos].element(), pos.x, pos.y);
+        }
+
+        let border = Border::new(grid, false)
             .top_bar(self.get_stats())
             .bot_bar(help);
 

@@ -2,7 +2,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use termint::{
     enums::Color,
     geometry::Constraint,
-    widgets::{Element, Layout, Spacer, Span, StrSpanExtension},
+    widgets::{Element, Layout, Spacer, Span, ToSpan},
 };
 
 use crate::{

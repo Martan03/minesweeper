@@ -1,25 +1,25 @@
 use termint::{
     buffer::Buffer,
     enums::Color,
-    geometry::Vec2,
+    geometry::{Rect, Vec2},
     style::Style,
-    widgets::{Element, Widget},
+    widgets::{cache::Cache, Element, Widget},
 };
 
-pub struct Border<T = Element> {
-    content: T,
+pub struct Border {
+    content: Element,
     top_bar: Option<Element>,
     bot_bar: Option<Element>,
     bg: bool,
 }
 
-impl<T> Border<T>
-where
-    T: Widget,
-{
-    pub fn new(content: T, bg: bool) -> Self {
+impl Border {
+    pub fn new<E>(content: E, bg: bool) -> Self
+    where
+        E: Into<Element>,
+    {
         Self {
-            content,
+            content: content.into(),
             top_bar: None,
             bot_bar: None,
             bg,
@@ -45,16 +45,12 @@ where
     }
 }
 
-impl<T> Widget for Border<T>
-where
-    T: Widget,
-{
-    fn render(&self, buffer: &mut Buffer) {
-        self.render_inner(buffer);
+impl Widget for Border {
+    fn render(&self, buffer: &mut Buffer, rect: Rect, cache: &mut Cache) {
+        self.render_inner(buffer, rect);
 
-        let mut cbuffer = buffer.subset(buffer.rect().inner((2, 4, 2, 3)));
-        self.content.render(&mut cbuffer);
-        buffer.merge(cbuffer);
+        let crect = rect.inner((2, 4, 2, 3));
+        self.content.render(buffer, crect, &mut cache.children[0]);
     }
 
     fn height(&self, size: &Vec2) -> usize {
@@ -66,22 +62,29 @@ where
     fn width(&self, size: &Vec2) -> usize {
         self.content.width(size) + 7
     }
+
+    fn children(&self) -> Vec<&Element> {
+        vec![&self.content]
+        // if let Some(child) = self.top_bar.as_ref() {
+        //     children.push(child);
+        // }
+        // if let Some(child) = self.bot_bar.as_ref() {
+        //     children.push(child);
+        // }
+    }
 }
 
-impl<T> Border<T>
-where
-    T: Widget,
-{
-    fn render_inner(&self, buffer: &mut Buffer) {
+impl Border {
+    fn render_inner(&self, buffer: &mut Buffer, rect: Rect) {
         let (bc, ff, sn) = Self::get_colors();
 
-        let hframe_width = buffer.width().saturating_sub(7);
+        let hframe_width = rect.width().saturating_sub(7);
         let hframe = "▄".repeat(hframe_width);
 
         let ffbc = Style::new().bg(ff).fg(bc);
         let bcsn = Style::new().bg(bc).fg(sn);
 
-        let mut pos = *buffer.pos();
+        let mut pos = *rect.pos();
         let end = pos.x + hframe_width + 6;
 
         buffer.set_str_styled(format!(" ▄▄▄{hframe}▄▄"), &pos, ffbc);
@@ -109,7 +112,7 @@ where
         }
 
         let bgframe = " ".repeat(hframe_width);
-        for _ in 0..buffer.height().saturating_sub(4) {
+        for _ in 0..rect.height().saturating_sub(4) {
             pos.y += 1;
 
             buffer.set_str_styled(" ", &pos, ffbc);
@@ -126,7 +129,7 @@ where
             buffer.set_str_styled("▌ ", &Vec2::new(pos.x + 1, pos.y), bcff);
             buffer.set_str_styled(" ", &Vec2::new(pos.x + 3, pos.y), snbc);
 
-            pos.x = buffer.x();
+            pos.x = rect.x();
         }
 
         pos.y += 1;
@@ -159,20 +162,14 @@ where
     }
 }
 
-impl<T> From<Border<T>> for Element
-where
-    T: Widget + 'static,
-{
-    fn from(value: Border<T>) -> Self {
+impl From<Border> for Element {
+    fn from(value: Border) -> Self {
         Element::new(value)
     }
 }
 
-impl<T> From<Border<T>> for Box<dyn Widget>
-where
-    T: Widget + 'static,
-{
-    fn from(value: Border<T>) -> Self {
+impl From<Border> for Box<dyn Widget> {
+    fn from(value: Border) -> Self {
         Box::new(value)
     }
 }

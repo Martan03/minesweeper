@@ -1,7 +1,7 @@
 use termint::{
     enums::Color,
     help,
-    widgets::{Grad, StrSpanExtension},
+    widgets::{Grad, ToSpan},
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
