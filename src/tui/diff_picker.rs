@@ -33,10 +33,10 @@ impl App {
     /// Difficulty picker key listener
     pub fn listen_dp(&mut self, event: KeyEvent) -> Result<(), Error> {
         match event.code {
-            KeyCode::Up => {
+            KeyCode::Up | KeyCode::Char('k') => {
                 self.picker_state = self.picker_state.saturating_sub(1)
             }
-            KeyCode::Down => {
+            KeyCode::Down | KeyCode::Char('j') => {
                 self.picker_state += (self.picker_state < 2) as usize
             }
             KeyCode::Enter => self.eval_diff(),
