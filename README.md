@@ -2,7 +2,7 @@
 
 Minesweeper TUI implementation in Rust 🦀
 
-![image](https://github.com/Martan03/minesweeper/assets/46300167/bb6d9047-36e4-405a-a19b-5d6490ddc815)
+![game](https://github.com/user-attachments/assets/655bd777-b89a-4e49-9a5e-fe6b9bb8e259)
 
 ## Installation:
 
@@ -61,6 +61,8 @@ if you denote even a single mine, the game is over.
 
 ### Difficulty picker:
 
+![difficulty picker](https://github.com/user-attachments/assets/38c60748-c101-4ba0-94e1-3c78e16e2f7f)
+
 When you start the game without previously setting the default difficulty or
 running the program with CLI arguments setting the difficulty, you will be
 greeted with this difficulty picker page. It contains a list of three
@@ -72,7 +74,7 @@ You can also open it from the game screen by pressing `Tab`.
 
 ### Game screen:
 
-![image](https://github.com/Martan03/minesweeper/assets/46300167/bb6d9047-36e4-405a-a19b-5d6490ddc815)
+![game](https://github.com/user-attachments/assets/655bd777-b89a-4e49-9a5e-fe6b9bb8e259)
 
 After you choose a difficulty you want to play, you will be greeted with the
 board in the middle. You can also see number of flags left above the board on
@@ -90,7 +92,7 @@ You can also press `c` to select the board's center cell.
 
 ### Help screen
 
-![image](https://github.com/Martan03/minesweeper/assets/46300167/447d6824-de3b-4784-b281-9b18678f8495)
+![image](https://github.com/user-attachments/assets/02afff94-23e6-4913-9c36-846cf368b918)
 
 By pressing `i` you can toggle between help screen and game screen. It contains
 list of all the described keybinds above.
