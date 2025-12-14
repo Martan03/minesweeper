@@ -36,6 +36,7 @@ impl Board {
         if size.x > 0 && size.y > 0 {
             board.cells[board.cur.x + board.cur.y * size.x].sel();
         }
+
         board
     }
 
@@ -178,7 +179,7 @@ impl Board {
     /// Increments value of cell neighbors
     fn inc_neighbors(&mut self, pos: usize) {
         let x = (pos % self.size.x) as isize;
-        let y = (pos / self.size.y) as isize;
+        let y = (pos / self.size.x) as isize;
 
         self.inc_hor_neighbors(x, y - 1);
         self.inc_hor_neighbors(x, y);
@@ -282,7 +283,7 @@ impl Index<Vec2> for Board {
     type Output = Cell;
 
     fn index(&self, pos: Vec2) -> &Self::Output {
-        &self.cells[pos.x + pos.y * self.size.y]
+        &self.cells[pos.x + pos.y * self.size.x]
     }
 }
 
@@ -294,6 +295,6 @@ impl IndexMut<usize> for Board {
 
 impl IndexMut<Vec2> for Board {
     fn index_mut(&mut self, pos: Vec2) -> &mut Self::Output {
-        &mut self.cells[pos.x + pos.y * self.size.y]
+        &mut self.cells[pos.x + pos.y * self.size.x]
     }
 }

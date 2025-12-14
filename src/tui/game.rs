@@ -6,9 +6,9 @@ use termint::{
 };
 
 use crate::{
-    app::{App, Screen},
+    app::App,
     error::Error,
-    game_state::GameState,
+    game_state::{GameState, Screen},
 };
 
 use super::widgets::border::Border;
@@ -59,7 +59,7 @@ impl App {
             KeyCode::Char('c') => self.board.center(),
             KeyCode::Char('i') => self.screen = Screen::Help,
             KeyCode::Tab => self.screen = Screen::DiffPicker,
-            KeyCode::Char('q') | KeyCode::Esc => return Err(Error::Exit),
+            KeyCode::Char('q') | KeyCode::Esc => return Err(Error::ExitErr),
             _ => return Ok(()),
         }
         self.render()

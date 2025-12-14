@@ -1,44 +1,72 @@
-use termint::{
-    enums::Color,
-    help,
-    widgets::{Grad, ToSpan},
-};
+use pareg::{ArgErrCtx, ArgError, FromArg, Pareg};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, PartialEq, Eq, Clone, Default)]
+use crate::error::Result;
+
+#[derive(Debug, PartialEq, Eq, Clone, Default, Serialize, Deserialize)]
 pub enum Difficulty {
     Easy,
     #[default]
     Medium,
     Hard,
-    Custom(usize, usize, usize),
+    Custom {
+        width: usize,
+        height: usize,
+        mines: usize,
+    },
+}
+
+impl Difficulty {
+    /// Gets size and number of mines
+    pub fn config(&self) -> (usize, usize, usize) {
+        match self {
+            Difficulty::Easy => (9, 9, 10),
+            Difficulty::Medium => (16, 16, 40),
+            Difficulty::Hard => (30, 16, 99),
+            Difficulty::Custom {
+                width,
+                height,
+                mines,
+            } => (*width, *height, *mines),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub enum Action {
+    #[default]
+    Play,
+    Help,
+    Config,
 }
 
 #[derive(Debug, Default)]
 pub struct Args {
     pub diff: Option<Difficulty>,
-    pub help: bool,
+    pub action: Action,
 }
 
 impl Args {
     /// Parses given args and checks contraints
     /// ### Returns:
     /// - Constructed [`Args`]
-    pub fn parse(args: std::env::Args) -> Result<Self, String> {
+    pub fn parse(mut args: Pareg) -> Result<Self> {
         let mut parsed = Args::default();
-        let args_len = args.len();
-
-        let mut args_iter = args.into_iter();
-        args_iter.next();
-        while let Some(arg) = args_iter.next() {
-            match arg.as_str() {
-                "-d" | "--diff" => parsed.parse_diff(&mut args_iter)?,
-                "-c" | "--custom" => parsed.parse_custom(&mut args_iter)?,
-                "-h" | "--help" => {
-                    parsed.help = true;
-                    Args::help(args_len)?;
-                    return Ok(parsed);
+        while let Some(arg) = args.next() {
+            match arg {
+                "-d" | "--diff" | "--difficulty" => {
+                    parsed.diff = Some(args.next_arg()?)
                 }
-                _ => return Err("Unknown argument given".to_string()),
+                "-c" | "--custom" => {
+                    parsed.diff = Some(Difficulty::Custom {
+                        width: args.next_arg()?,
+                        height: args.next_arg()?,
+                        mines: args.next_arg()?,
+                    })
+                }
+                "config" => parsed.action = Action::Config,
+                "-h" | "--help" | "help" => parsed.action = Action::Help,
+                _ => return Err(args.err_unknown_argument().into()),
             }
         }
 
@@ -46,75 +74,19 @@ impl Args {
     }
 }
 
-// Private methods implementations
-impl Args {
-    /// Parses difficulty args
-    fn parse_diff<T>(&mut self, args: &mut T) -> Result<(), String>
-    where
-        T: Iterator<Item = String>,
-    {
-        let Some(diff) = args.next() else {
-            return Err("Expected argument after '-d' flag".to_string());
-        };
-
-        self.diff = match diff.as_str() {
-            "easy" => Some(Difficulty::Easy),
-            "medium" => Some(Difficulty::Medium),
-            "hard" => Some(Difficulty::Hard),
-            _ => return Err(format!("Invalid difficulty: '{}'", diff)),
-        };
-        Ok(())
-    }
-
-    /// Parses custom difficulty args
-    fn parse_custom<T>(&mut self, args: &mut T) -> Result<(), String>
-    where
-        T: Iterator<Item = String>,
-    {
-        let width = Args::get_num(args)?;
-        let height = Args::get_num(args)?;
-        let mines = Args::get_num(args)?;
-
-        self.diff = Some(Difficulty::Custom(width, height, mines));
-        Ok(())
-    }
-
-    /// Gets number (usize) from args
-    fn get_num<T>(args: &mut T) -> Result<usize, String>
-    where
-        T: Iterator<Item = String>,
-    {
-        let Some(val) = args.next() else {
-            return Err("Expected more arguments".to_string());
-        };
-
-        val.parse::<usize>()
-            .map_err(|_| format!("Number expected, got '{val}'"))
-    }
-
-    /// Displays help
-    fn help(arg_len: usize) -> Result<(), String> {
-        if arg_len > 2 {
-            return Err(
-                "Help cannot be combined with other arguments".to_string()
-            );
+impl<'a> FromArg<'a> for Difficulty {
+    fn from_arg(arg: &'a str) -> pareg::Result<Self> {
+        match arg {
+            "easy" => Ok(Self::Easy),
+            "medium" => Ok(Self::Medium),
+            "hard" => Ok(Self::Hard),
+            v => Err(ArgError::FailedToParse(Box::new(
+                ArgErrCtx::from_msg(
+                    format!("Invalid difficulty `{v}`").into(),
+                    v.to_string(),
+                )
+                .hint("Valid options are `easy`, `medium` or `hard`"),
+            ))),
         }
-
-        println!(
-            "Welcome to help for {} by {}\n",
-            "minesweeper".fg(Color::Green),
-            Grad::new("Martan03", (0, 220, 255), (175, 80, 255))
-        );
-        help!(
-            "Usage":
-            "minesweeper" => "Opens TUI difficulty picker\n"
-            "minesweeper" ["flags"] => "Start the game with given options\n"
-            "Flags":
-            "-d --diff" ["easy|medium|hard"] => "Sets the game difficulty\n"
-            "-c --custom" ["width"] ["height"] ["mines"] =>
-                "Creates custom game with given size and amount of mines\n"
-            "-h --help" => "Displays this help"
-        );
-        Ok(())
     }
 }

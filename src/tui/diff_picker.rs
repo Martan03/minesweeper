@@ -6,9 +6,11 @@ use termint::{
 };
 
 use crate::{
-    app::{App, Screen},
+    app::App,
+    args::Difficulty,
     board::board_struct::Board,
     error::Error,
+    game_state::Screen,
     tui::widgets::{border::Border, button::Button},
 };
 
@@ -40,19 +42,20 @@ impl App {
                 self.picker_state += (self.picker_state < 2) as usize
             }
             KeyCode::Enter => self.eval_diff(),
-            KeyCode::Esc | KeyCode::Char('q') => return Err(Error::Exit),
+            KeyCode::Esc | KeyCode::Char('q') => return Err(Error::ExitErr),
             _ => return Ok(()),
         };
         self.render()
     }
 
     fn eval_diff(&mut self) {
-        let (size, mines) = match self.picker_state {
-            0 => (Vec2::new(9, 9), 10),
-            1 => (Vec2::new(16, 16), 40),
-            _ => (Vec2::new(30, 16), 99),
+        let diff = match self.picker_state {
+            0 => Difficulty::Easy,
+            1 => Difficulty::Medium,
+            _ => Difficulty::Hard,
         };
-        self.board = Board::new(size, mines);
+        let (w, h, m) = diff.config();
+        self.board = Board::new(Vec2::new(w, h), m);
         self.screen = Screen::Game;
     }
 

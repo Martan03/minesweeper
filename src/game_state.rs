@@ -11,3 +11,12 @@ impl GameState {
         *self == Self::Playing
     }
 }
+
+/// Represents which game screen is currently displayed
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
+pub enum Screen {
+    Game,
+    #[default]
+    DiffPicker,
+    Help,
+}

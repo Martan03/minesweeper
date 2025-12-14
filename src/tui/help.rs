@@ -6,9 +6,7 @@ use termint::{
 };
 
 use crate::{
-    app::{App, Screen},
-    error::Error,
-    tui::widgets::border::Border,
+    app::App, error::Error, game_state::Screen, tui::widgets::border::Border,
 };
 
 use super::raw_span::RawSpan;
@@ -41,12 +39,14 @@ impl App {
     pub fn listen_help(&mut self, event: KeyEvent) -> Result<(), Error> {
         match event.code {
             KeyCode::Char('i') => self.screen = Screen::Game,
-            KeyCode::Esc | KeyCode::Char('q') => return Err(Error::Exit),
+            KeyCode::Esc | KeyCode::Char('q') => return Err(Error::ExitErr),
             _ => return Ok(()),
         }
         self.render()
     }
+}
 
+impl App {
     /// Gets help item layout
     fn help_item(key: &str, key_len: usize, action: &str) -> Layout {
         let mut layout = Layout::horizontal();

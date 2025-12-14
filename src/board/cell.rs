@@ -93,7 +93,7 @@ impl Cell {
     pub fn element(&self) -> Element {
         match self.cell_type {
             CellType::Visible => self.clone().into(),
-            _ => self.get_hidden(self.sel).into(),
+            _ => self.get_hidden().into(),
         }
     }
 }
@@ -143,7 +143,7 @@ impl Cell {
         buffer.set_bg(lb, &pos);
     }
 
-    fn get_hidden(&self, sel: bool) -> Button {
+    fn get_hidden(&self) -> Button {
         let text = match self.cell_type {
             CellType::Flag => RawSpan::new(" ▶ ").fg(Color::Hex(0xff0000)),
             CellType::WrongFlag => RawSpan::new(" ▶ ")
@@ -151,7 +151,7 @@ impl Cell {
                 .fg(Color::Hex(0xff0000)),
             _ => RawSpan::new("   "),
         };
-        Button::new(text).selected(sel)
+        Button::new(text).selected(self.sel)
     }
 
     fn get_value(&self) -> (&str, Color) {

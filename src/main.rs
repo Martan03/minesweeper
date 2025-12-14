@@ -1,40 +1,88 @@
 use app::App;
-use args::Difficulty;
-use error::Error;
-use termint::{enums::Color, geometry::Vec2, widgets::ToSpan};
+use std::{
+    env,
+    fs::create_dir_all,
+    io::{stdout, Write},
+    panic::{set_hook, take_hook},
+    process::{Command, ExitCode},
+};
+use termint::{enums::Color, widgets::ToSpan};
+
+use args::Action;
+use config::{config_dir, config_file, Config};
+use crossterm::terminal::{disable_raw_mode, is_raw_mode_enabled};
+use error::Result;
+use help::print_help;
+use pareg::Pareg;
 
 use crate::args::Args;
 
 mod app;
 mod args;
 mod board;
+mod config;
 mod error;
 mod game_state;
+mod help;
 mod tui;
 
-fn main() {
-    if let Err(e) = run() {
-        eprintln!("{} {}", "Error:".fg(Color::Red), e);
-        std::process::exit(1);
-    };
+fn main() -> ExitCode {
+    match run() {
+        Ok(_) => ExitCode::SUCCESS,
+        Err(e) => {
+            eprintln!("{} {}", "Error:".fg(Color::Red), e);
+            ExitCode::FAILURE
+        }
+    }
 }
 
-fn run() -> Result<(), Error> {
-    let args = Args::parse(std::env::args())?;
-    if args.help {
-        return Ok(());
-    }
+fn run() -> Result<()> {
+    // Restore the terminal even when we panic
+    register_panic_hook();
 
-    let mut app = App::new(get_diff(args.diff));
+    let args = Args::parse(Pareg::args())?;
+    match args.action {
+        Action::Play => play(args),
+        Action::Help => {
+            print_help();
+            Ok(())
+        }
+        Action::Config => config(),
+    }
+}
+
+fn play(args: Args) -> Result<()> {
+    start_game(args, Config::from_default_json())?;
+    _ = stdout().flush();
+    Ok(())
+}
+
+fn start_game(args: Args, conf: Config) -> Result<()> {
+    let mut app = App::new(args.diff.or(conf.default_difficulty));
     app.run()
 }
 
-fn get_diff(diff: Option<Difficulty>) -> Option<(Vec2, usize)> {
-    match diff? {
-        Difficulty::Easy => (Vec2::new(9, 9), 10),
-        Difficulty::Medium => (Vec2::new(16, 16), 40),
-        Difficulty::Hard => (Vec2::new(30, 16), 99),
-        Difficulty::Custom(w, h, m) => (Vec2::new(w, h), m),
+fn config() -> Result<()> {
+    let editor = env::var("EDITOR").unwrap_or("vi".to_string());
+    create_dir_all(config_dir())?;
+    let file = config_file();
+    if !file.exists() {
+        Config::default().to_default_json()?;
     }
-    .into()
+
+    Command::new(editor).arg(file).spawn()?.wait()?;
+    Ok(())
+}
+
+fn register_panic_hook() {
+    let hook = take_hook();
+    set_hook(Box::new(move |pi| {
+        if is_raw_mode_enabled().unwrap_or_default() {
+            // Restores screen
+            print!("\x1b[?1049l\x1b[?25h");
+            _ = stdout().flush();
+            _ = disable_raw_mode();
+        }
+        hook(pi);
+    }));
 }

@@ -1,21 +1,19 @@
-use std::fmt::Display;
+use thiserror::Error;
 
+pub type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Debug, Error)]
 pub enum Error {
-    IOErr(std::io::Error),
+    #[error(transparent)]
+    IOErr(#[from] std::io::Error),
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
+    #[error(transparent)]
+    Pareg(#[from] pareg::ArgError),
+    #[error("{0}")]
     Msg(String),
-    Exit,
-}
-
-impl From<std::io::Error> for Error {
-    fn from(value: std::io::Error) -> Self {
-        Self::IOErr(value)
-    }
-}
-
-impl From<&str> for Error {
-    fn from(value: &str) -> Self {
-        Self::Msg(value.to_string())
-    }
+    #[error("exit")]
+    ExitErr,
 }
 
 impl From<String> for Error {
@@ -24,12 +22,8 @@ impl From<String> for Error {
     }
 }
 
-impl Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Error::IOErr(e) => write!(f, "{e}"),
-            Error::Msg(msg) => write!(f, "{msg}"),
-            Error::Exit => write!(f, "exit"),
-        }
+impl From<&str> for Error {
+    fn from(value: &str) -> Self {
+        Self::Msg(value.to_string())
     }
 }

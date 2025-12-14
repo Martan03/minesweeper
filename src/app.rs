@@ -14,15 +14,12 @@ use termint::{
     widgets::{Layout, ToSpan},
 };
 
-use crate::{board::board_struct::Board, error::Error, game_state::GameState};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum Screen {
-    #[default]
-    Game,
-    Help,
-    DiffPicker,
-}
+use crate::{
+    args::Difficulty,
+    board::board_struct::Board,
+    error::Error,
+    game_state::{GameState, Screen},
+};
 
 #[derive(Debug)]
 pub struct App {
@@ -35,36 +32,40 @@ pub struct App {
 
 impl App {
     /// Creates new [`App`]
-    pub fn new(diff: Option<(Vec2, usize)>) -> Self {
-        if let Some((size, mines)) = diff {
-            Self {
-                board: Board::new(size, mines),
-                state: GameState::Playing,
-                screen: Default::default(),
-                picker_state: 0,
-                term: Term::new().small_screen(Self::small_screen()),
+    pub fn new(diff: Option<Difficulty>) -> Self {
+        let (board, screen) = match diff {
+            Some(dif) => {
+                let (w, h, m) = dif.config();
+                (Board::new(Vec2::new(w, h), m), Screen::Game)
             }
-        } else {
-            Self::default()
+            None => (Board::new(Vec2::new(0, 0), 0), Screen::DiffPicker),
+        };
+
+        Self {
+            board,
+            state: GameState::Playing,
+            screen,
+            picker_state: 0,
+            term: Term::new().small_screen(Self::small_screen()),
         }
     }
 
     /// Runs the [`App`]
     pub fn run(&mut self) -> Result<(), Error> {
-        // Saves screen, clears screen and hides cursor
+        enable_raw_mode()?;
+        // Swaps print buffer, clears screen and hides cursor
         print!("\x1b[?1049h\x1b[2J\x1b[?25l");
         _ = stdout().flush();
-        enable_raw_mode()?;
 
         let res = self.main_loop();
 
-        disable_raw_mode()?;
         // Restores screen
         print!("\x1b[?1049l\x1b[?25h");
         _ = stdout().flush();
+        disable_raw_mode()?;
 
         match res {
-            Err(Error::Exit) => Ok(()),
+            Err(Error::ExitErr) => Ok(()),
             _ => res,
         }
     }
