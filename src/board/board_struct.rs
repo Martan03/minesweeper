@@ -122,7 +122,7 @@ impl Board {
 
     pub fn cur_down(&mut self) {
         let mut y = self.cur.y + 1;
-        if self.cur.y >= self.size.y {
+        if y >= self.size.y {
             y = 0;
         }
         self.select(Vec2::new(self.cur.x, y));
@@ -135,7 +135,7 @@ impl Board {
 
     pub fn cur_right(&mut self) {
         let mut x = self.cur.x + 1;
-        if self.cur.x >= self.size.x {
+        if x >= self.size.x {
             x = 0;
         }
         self.select(Vec2::new(x, self.cur.y));
