@@ -1,7 +1,9 @@
+use std::ops::{Index, IndexMut};
+
 use rand::{thread_rng, Rng};
 use termint::{
-    geometry::{constrain::Constrain, coords::Coords},
-    widgets::layout::Layout,
+    geometry::{Rect, Vec2},
+    widgets::{Element, Grid},
 };
 
 use super::cell::{Cell, CellType};
@@ -9,52 +11,41 @@ use super::cell::{Cell, CellType};
 /// Struct representing board
 #[derive(Debug, Clone)]
 pub struct Board {
-    pub width: usize,
-    pub height: usize,
     pub cells: Vec<Cell>,
+    pub size: Vec2<usize>,
     pub mines: usize,
     generated: bool,
-    pub cur: Coords,
+    pub cur: Vec2,
     rev: usize,
     flags: usize,
 }
 
 impl Board {
     /// Creates new [`Board`] with given size
-    pub fn new(width: usize, height: usize, mines: usize) -> Self {
-        let cells = vec![Cell::new(0x00); width * height];
+    pub fn new(size: Vec2, mines: usize) -> Self {
+        let cells = vec![Cell::new(0x00); size.x * size.y];
         let mut board = Self {
-            width,
-            height,
+            size,
             cells,
             mines,
             generated: false,
-            cur: center_of(width, height),
+            cur: center_of(size.x, size.y),
             rev: 0,
             flags: 0,
         };
-
-        if width > 0 && height > 0 {
-            board.cells[board.cur.x + board.cur.y * width].sel();
+        if size.x > 0 && size.y > 0 {
+            board.cells[board.cur.x + board.cur.y * size.x].sel();
         }
+
         board
     }
 
-    /// Gets [`Board`] as termint Layout element
-    pub fn get_element(&self, _over: bool) -> Layout {
-        let mut layout = Layout::vertical();
-        for y in 0..self.height {
-            let mut row = Layout::horizontal();
-            for x in 0..self.width {
-                row.add_child(
-                    self.cells[self.get_id(x, y)]
-                        .get_element(self.cur.x == x && self.cur.y == y),
-                    Constrain::Length(6),
-                );
-            }
-            layout.add_child(row, Constrain::Length(3));
+    pub fn get_element(&self) -> Element {
+        let mut grid = Grid::new(vec![6; self.size.x], vec![3; self.size.y]);
+        for pos in Rect::new(0, 0, self.size.x, self.size.y) {
+            grid.push(self[pos].element(), pos.x, pos.y);
         }
-        layout
+        grid.into()
     }
 
     /// Reveals current [`Cell`] and its neighbors when 0
@@ -101,14 +92,14 @@ impl Board {
 
     /// Returns true when game is won, else false
     pub fn win(&self) -> bool {
-        self.rev + self.flags == self.width * self.height
+        self.rev + self.flags == self.size.x * self.size.y
             && self.mines == self.flags
     }
 
     /// Resets the [`Board`]
     pub fn reset(&mut self) {
-        self.cells = vec![Cell::new(0); self.width * self.height];
-        self.cells[self.cur.x + self.cur.y * self.width].sel();
+        self.cells = vec![Cell::new(0); self.size.x * self.size.y];
+        self.cells[self.cur.x + self.cur.y * self.size.x].sel();
         self.generated = false;
         self.rev = 0;
         self.flags = 0;
@@ -121,33 +112,33 @@ impl Board {
 
     /// Centers the cursor
     pub fn center(&mut self) {
-        self.select(center_of(self.width, self.height));
+        self.select(center_of(self.size.x, self.size.y));
     }
 
     pub fn cur_up(&mut self) {
-        let y = self.cur.y.checked_sub(1).unwrap_or(self.height - 1);
-        self.select(Coords::new(self.cur.x, y));
+        let y = self.cur.y.checked_sub(1).unwrap_or(self.size.y - 1);
+        self.select(Vec2::new(self.cur.x, y));
     }
 
     pub fn cur_down(&mut self) {
         let mut y = self.cur.y + 1;
-        if self.cur.y >= self.height {
+        if y >= self.size.y {
             y = 0;
         }
-        self.select(Coords::new(self.cur.x, y));
+        self.select(Vec2::new(self.cur.x, y));
     }
 
     pub fn cur_left(&mut self) {
-        let x = self.cur.x.checked_sub(1).unwrap_or(self.width - 1);
-        self.select(Coords::new(x, self.cur.y));
+        let x = self.cur.x.checked_sub(1).unwrap_or(self.size.x - 1);
+        self.select(Vec2::new(x, self.cur.y));
     }
 
     pub fn cur_right(&mut self) {
         let mut x = self.cur.x + 1;
-        if self.cur.x >= self.width {
+        if x >= self.size.x {
             x = 0;
         }
-        self.select(Coords::new(x, self.cur.y));
+        self.select(Vec2::new(x, self.cur.y));
     }
 }
 
@@ -159,18 +150,18 @@ impl Board {
         let mut rng = thread_rng();
 
         let mut cannot = self.get_neighbors(&self.cur);
-        cannot.push(Coords::new(self.cur.x, self.cur.y));
+        cannot.push(Vec2::new(self.cur.x, self.cur.y));
 
         for _ in 0..self.mines {
-            let mut x = rng.gen_range(0..self.width);
-            let mut y = rng.gen_range(0..self.height);
+            let mut x = rng.gen_range(0..self.size.x);
+            let mut y = rng.gen_range(0..self.size.y);
 
             let mut id = self.get_id(x, y);
             while self.cells[id].get() == 0xff
-                || cannot.contains(&Coords::new(x, y))
+                || cannot.contains(&Vec2::new(x, y))
             {
-                x = rng.gen_range(0..self.width);
-                y = rng.gen_range(0..self.height);
+                x = rng.gen_range(0..self.size.x);
+                y = rng.gen_range(0..self.size.y);
                 id = self.get_id(x, y);
             }
 
@@ -179,17 +170,16 @@ impl Board {
         }
     }
 
-    /// Selectets cell on given position
-    fn select(&mut self, pos: Coords) {
-        self.cells[self.cur.x + self.cur.y * self.width].sel();
+    fn select(&mut self, pos: Vec2) {
+        self.cells[self.cur.x + self.cur.y * self.size.x].sel();
         self.cur = pos;
-        self.cells[self.cur.x + self.cur.y * self.width].sel();
+        self.cells[self.cur.x + self.cur.y * self.size.x].sel();
     }
 
     /// Increments value of cell neighbors
     fn inc_neighbors(&mut self, pos: usize) {
-        let x = (pos % self.width) as isize;
-        let y = (pos / self.width) as isize;
+        let x = (pos % self.size.x) as isize;
+        let y = (pos / self.size.x) as isize;
 
         self.inc_hor_neighbors(x, y - 1);
         self.inc_hor_neighbors(x, y);
@@ -198,7 +188,7 @@ impl Board {
 
     /// Increments value of cell horizontal neighbors
     fn inc_hor_neighbors(&mut self, x: isize, y: isize) {
-        if y >= 0 && y < self.height as isize {
+        if y >= 0 && y < self.size.y as isize {
             self.inc_cell(x - 1, y);
             self.inc_cell(x, y);
             self.inc_cell(x + 1, y);
@@ -207,15 +197,15 @@ impl Board {
 
     /// Increments cell value
     fn inc_cell(&mut self, x: isize, y: isize) {
-        let width = self.width as isize;
+        let width = self.size.x as isize;
         if x >= 0 && x < width {
             self.cells[(y * width + x) as usize].inc();
         }
     }
 
     /// Reveals cell and its neighbors, when the cell value is 0
-    fn reveal_cell(&mut self, coords: &Coords) {
-        let cell = &mut self.cells[coords.x + coords.y * self.width];
+    fn reveal_cell(&mut self, coords: &Vec2) {
+        let cell = &mut self.cells[coords.x + coords.y * self.size.x];
         if cell.is_visible() || cell.is_flag() {
             return;
         }
@@ -233,7 +223,7 @@ impl Board {
     fn reveal_vis(&mut self) -> bool {
         let mut ret = true;
         for n in self.get_neighbors(&self.cur) {
-            let cell = &mut self.cells[n.x + n.y * self.width];
+            let cell = &mut self.cells[n.x + n.y * self.size.x];
             if cell.is_flag() {
                 continue;
             }
@@ -249,10 +239,10 @@ impl Board {
 
     /// Gets cell id from given coords
     pub fn get_id(&self, x: usize, y: usize) -> usize {
-        self.width * y + x
+        self.size.x * y + x
     }
 
-    fn get_neighbors(&self, coords: &Coords) -> Vec<Coords> {
+    fn get_neighbors(&self, coords: &Vec2) -> Vec<Vec2> {
         let mut cells = Vec::new();
         let x = coords.x as isize;
         let y = coords.y as isize;
@@ -268,15 +258,43 @@ impl Board {
         cells
     }
 
-    fn add_neighbor(&self, cells: &mut Vec<Coords>, x: isize, y: isize) {
-        if (0..self.width as isize).contains(&x)
-            && (0..self.height as isize).contains(&y)
+    fn add_neighbor(&self, cells: &mut Vec<Vec2>, x: isize, y: isize) {
+        if (0..self.size.x as isize).contains(&x)
+            && (0..self.size.y as isize).contains(&y)
         {
-            cells.push(Coords::new(x as usize, y as usize));
+            cells.push(Vec2::new(x as usize, y as usize));
         }
     }
 }
 
-fn center_of(x: usize, y: usize) -> Coords {
-    Coords::new(x.saturating_sub(1) / 2, y.saturating_sub(1) / 2)
+fn center_of(x: usize, y: usize) -> Vec2 {
+    Vec2::new(x.saturating_sub(1) / 2, y.saturating_sub(1) / 2)
+}
+
+impl Index<usize> for Board {
+    type Output = Cell;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.cells[index]
+    }
+}
+
+impl Index<Vec2> for Board {
+    type Output = Cell;
+
+    fn index(&self, pos: Vec2) -> &Self::Output {
+        &self.cells[pos.x + pos.y * self.size.x]
+    }
+}
+
+impl IndexMut<usize> for Board {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.cells[index]
+    }
+}
+
+impl IndexMut<Vec2> for Board {
+    fn index_mut(&mut self, pos: Vec2) -> &mut Self::Output {
+        &mut self.cells[pos.x + pos.y * self.size.x]
+    }
 }

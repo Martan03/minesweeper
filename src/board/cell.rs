@@ -1,7 +1,9 @@
 use termint::{
-    enums::{bg::Bg, fg::Fg, modifier::Modifier},
-    geometry::constrain::Constrain,
-    widgets::{layout::Layout, widget::Widget},
+    buffer::Buffer,
+    enums::{Color, Modifier},
+    geometry::{Rect, Vec2},
+    style::Style,
+    widgets::{cache::Cache, Element, Widget},
 };
 
 use crate::tui::{raw_span::RawSpan, widgets::button::Button};
@@ -38,7 +40,7 @@ impl Cell {
         self.value = value;
     }
 
-    /// Incrementes [`Cell`] value by one
+    /// Increments [`Cell`] value by one
     pub fn inc(&mut self) {
         self.value = self.value.saturating_add(1);
     }
@@ -46,13 +48,6 @@ impl Cell {
     /// Gets [`Cell`] value
     pub fn get(&self) -> u8 {
         self.value
-    }
-
-    pub fn get_element(&self, sel: bool) -> Box<dyn Widget> {
-        match self.cell_type {
-            CellType::Visible => self.get_visible(),
-            _ => self.get_hidden(sel),
-        }
     }
 
     /// Sets [`Cell`] as visible (if possible)
@@ -94,58 +89,95 @@ impl Cell {
         self.cell_type == CellType::Flag
     }
 
-    fn get_visible(&self) -> Box<dyn Widget> {
-        let lb = 0x797979;
+    /// Gets the corresponding cell element
+    pub fn element(&self) -> Element {
+        match self.cell_type {
+            CellType::Visible => self.clone().into(),
+            _ => self.get_hidden().into(),
+        }
+    }
+}
+
+impl Widget for Cell {
+    fn render(&self, buffer: &mut Buffer, rect: Rect, _cache: &mut Cache) {
+        self.render_visible(buffer, rect);
+    }
+
+    fn height(&self, _size: &Vec2) -> usize {
+        3
+    }
+
+    fn width(&self, _size: &Vec2) -> usize {
+        7
+    }
+
+    fn children(&self) -> Vec<&Element> {
+        vec![]
+    }
+}
+
+impl Cell {
+    fn render_visible(&self, buffer: &mut Buffer, rect: Rect) {
+        let lb = Color::Hex(0x797979);
         let db = match self.sel {
-            true if self.value == 0xfe => 0xd20000,
-            true => 0xa0a0a0,
-            false if self.value == 0xfe => 0xee0000,
-            false => 0xbcbcbc,
+            true if self.value == 0xfe => Color::Hex(0xd20000),
+            true => Color::Hex(0xa0a0a0),
+            false if self.value == 0xfe => Color::Hex(0xee0000),
+            false => Color::Hex(0xbcbcbc),
         };
 
-        let mut vis = Layout::vertical();
-        vis.add_child(
-            RawSpan::new(" ▆▆▆▆▆").fg(Fg::Hex(db)).bg(Bg::Hex(lb)),
-            Constrain::Length(1),
+        let mut pos = *rect.pos();
+        buffer.set_str_styled(" ▆▆▆▆▆", &pos, Style::new().bg(lb).fg(db));
+
+        pos.y += 1;
+        let (val, fg) = self.get_value();
+        buffer.set_str_styled(
+            format!("   {val} "),
+            &pos,
+            Style::new().bg(db).fg(fg),
         );
-        vis.add_child(
-            RawSpan::new(format!(" {}  {} ", Bg::Hex(db), self.get_value()))
-                .bg(Bg::Hex(lb)),
-            Constrain::Length(1),
-        );
-        vis.add_child(
-            RawSpan::new(format!(" {}▂▂▂▂▂", Bg::Hex(db)))
-                .bg(Bg::Hex(lb))
-                .fg(Fg::Hex(lb)),
-            Constrain::Length(1),
-        );
-        vis.into()
+        buffer.set_bg(lb, &pos);
+
+        pos.y += 1;
+        buffer.set_str_styled(" ▂▂▂▂▂", &pos, Style::new().bg(db).fg(lb));
+        buffer.set_bg(lb, &pos);
     }
 
-    fn get_hidden(&self, sel: bool) -> Box<dyn Widget> {
-        Button::new(match self.cell_type {
-            CellType::Flag => RawSpan::new(" ▶ ").fg(Fg::Hex(0xff0000)),
+    fn get_hidden(&self) -> Button {
+        let text = match self.cell_type {
+            CellType::Flag => RawSpan::new(" ▶ ").fg(Color::Hex(0xff0000)),
             CellType::WrongFlag => RawSpan::new(" ▶ ")
-                .modifier(Modifier::Strike)
-                .fg(Fg::Hex(0xff0000)),
+                .modifier(Modifier::STRIKED)
+                .fg(Color::Hex(0xff0000)),
             _ => RawSpan::new("   "),
-        })
-        .selected(sel)
-        .into()
+        };
+        Button::new(text).selected(self.sel)
     }
 
-    fn get_value(&self) -> String {
+    fn get_value(&self) -> (&str, Color) {
         match self.value {
-            0x01 => format!("{}{}1 ", Modifier::Bold, Fg::Hex(0x0000ff)),
-            0x02 => format!("{}{}2 ", Modifier::Bold, Fg::Hex(0x007700)),
-            0x03 => format!("{}{}3 ", Modifier::Bold, Fg::Hex(0xff0000)),
-            0x04 => format!("{}{}4 ", Modifier::Bold, Fg::Hex(0x000077)),
-            0x05 => format!("{}{}5 ", Modifier::Bold, Fg::Hex(0x770000)),
-            0x06 => format!("{}{}6 ", Modifier::Bold, Fg::Hex(0x007777)),
-            0x07 => format!("{}{}7 ", Modifier::Bold, Fg::Hex(0x000000)),
-            0x08 => format!("{}{}8 ", Modifier::Bold, Fg::Hex(0x777777)),
-            0xfe | 0xff => "💣".to_string(),
-            _ => "  ".to_string(),
+            0x01 => ("1 ", Color::Hex(0x0000ff)),
+            0x02 => ("2 ", Color::Hex(0x007700)),
+            0x03 => ("3 ", Color::Hex(0xff0000)),
+            0x04 => ("4 ", Color::Hex(0x000077)),
+            0x05 => ("5 ", Color::Hex(0x770000)),
+            0x06 => ("6 ", Color::Hex(0x007777)),
+            0x07 => ("7 ", Color::Hex(0x000000)),
+            0x08 => ("8 ", Color::Hex(0x777777)),
+            0xfe | 0xff => ("💣", Color::Default),
+            _ => ("  ", Color::Default),
         }
+    }
+}
+
+impl From<Cell> for Element {
+    fn from(value: Cell) -> Self {
+        Element::new(value)
+    }
+}
+
+impl From<Cell> for Box<dyn Widget> {
+    fn from(value: Cell) -> Self {
+        Box::new(value)
     }
 }

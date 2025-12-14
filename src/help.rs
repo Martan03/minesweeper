@@ -1,14 +1,14 @@
 use termint::{
-    enums::fg::Fg,
+    enums::Color,
     help,
-    widgets::{grad::Grad, span::StrSpanExtension},
+    widgets::{Grad, ToSpan},
 };
 
 /// Displays help
 pub fn print_help() {
     println!(
         "Welcome to help for {} by {}\n",
-        "minesweeper".fg(Fg::Green),
+        "minesweeper".fg(Color::Green),
         Grad::new("Martan03", (0, 220, 255), (175, 80, 255))
     );
     help!(

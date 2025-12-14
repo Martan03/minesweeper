@@ -1,22 +1,25 @@
-use std::io::{stdout, Write};
-
 use termint::{
-    enums::{bg::Bg, cursor::Cursor, fg::Fg},
-    geometry::coords::Coords,
-    widgets::{layout::Layout, widget::Widget},
+    buffer::Buffer,
+    enums::Color,
+    geometry::{Padding, Rect, Vec2},
+    style::Style,
+    widgets::{cache::Cache, Element, Widget},
 };
 
 pub struct Border {
-    board: Layout,
-    top_bar: Option<Box<dyn Widget>>,
-    bot_bar: Option<Box<dyn Widget>>,
+    content: Element,
+    top_bar: Option<Element>,
+    bot_bar: Option<Element>,
     bg: bool,
 }
 
 impl Border {
-    pub fn new(board: Layout, bg: bool) -> Self {
+    pub fn new<E>(content: E, bg: bool) -> Self
+    where
+        E: Into<Element>,
+    {
         Self {
-            board,
+            content: content.into(),
             top_bar: None,
             bot_bar: None,
             bg,
@@ -24,18 +27,18 @@ impl Border {
     }
 
     /// Sets top bar to given [`Widget`]
-    pub fn top_bar<T>(mut self, bar: T) -> Self
+    pub fn top_bar<E>(mut self, bar: E) -> Self
     where
-        T: Into<Box<dyn Widget>>,
+        E: Into<Element>,
     {
         self.top_bar = Some(bar.into());
         self
     }
 
     /// Sets bottom bar to given [`Widget`]
-    pub fn bot_bar<T>(mut self, bar: T) -> Self
+    pub fn bot_bar<E>(mut self, bar: E) -> Self
     where
-        T: Into<Box<dyn Widget>>,
+        E: Into<Element>,
     {
         self.bot_bar = Some(bar.into());
         self
@@ -43,185 +46,174 @@ impl Border {
 }
 
 impl Widget for Border {
-    fn render(&self, pos: &Coords, size: &Coords) {
-        print!("{}", self.get_string(pos, size));
-        _ = stdout().flush();
+    fn render(&self, buffer: &mut Buffer, rect: Rect, cache: &mut Cache) {
+        self.render_inner(buffer, rect, cache);
+
+        let crect = rect.inner(self.content_padding());
+        self.content.render(buffer, crect, &mut cache.children[0]);
     }
 
-    fn get_string(&self, pos: &Coords, size: &Coords) -> String {
-        let brframe1 = format!(
-            "{}{}▄▟{} {} \x1b[0m",
-            Fg::Hex(0xbcbcbc),
-            Bg::Hex(0xffffff),
-            Bg::Hex(0xbcbcbc),
-            Bg::Hex(0x797979)
-        );
-        let brframe2 = format!(
-            "{}{}▄▄▄{} \x1b[0m",
-            Fg::Hex(0x797979),
-            Bg::Hex(0xbcbcbc),
-            Bg::Hex(0x797979)
-        );
-
-        let blframe1 =
-            format!("{} {}  ", Bg::Hex(0xffffff), Bg::Hex(0xbcbcbc));
-        let blframe2 = format!(
-            "{}{}▄{}{}▄▄",
-            Bg::Hex(0xffffff),
-            Fg::Hex(0xbcbcbc),
-            Bg::Hex(0xbcbcbc),
-            Fg::Hex(0x797979)
-        );
-
-        let lframe = format!(
-            "{} {} {}{}▌",
-            Bg::Hex(0xffffff),
-            Bg::Hex(0xbcbcbc),
-            Fg::Hex(0xbcbcbc),
-            Bg::Hex(0x797979)
-        );
-
-        let tlframe1 =
-            format!("{}{} ▄▄▄", Bg::Hex(0xffffff), Fg::Hex(0xbcbcbc));
-        let tlframe2 = format!(
-            "{} {}{} ▗▄",
-            Bg::Hex(0xffffff),
-            Bg::Hex(0xbcbcbc),
-            Fg::Hex(0x797979)
-        );
-
-        // Horizontal borders
-        let hframe = "▄".repeat(size.x - 7);
-
-        let tframe1 =
-            format!("{}{}{}", Bg::Hex(0xffffff), Fg::Hex(0xbcbcbc), &hframe);
-        let tframe2 =
-            format!("{}{}{}", Bg::Hex(0xbcbcbc), Fg::Hex(0x797979), &hframe);
-
-        let bframe1 =
-            format!("{}{}{}", Fg::Hex(0xbcbcbc), Bg::Hex(0xffffff), &hframe);
-        let bframe2 =
-            format!("{}{}{}", Fg::Hex(0x797979), Bg::Hex(0xbcbcbc), &hframe);
-
-        let trframe1 = format!(
-            "{}{}▄▄{}{}▄\x1b[0m",
-            Bg::Hex(0xffffff),
-            Fg::Hex(0xbcbcbc),
-            Bg::Hex(0xbcbcbc),
-            Fg::Hex(0x797979)
-        );
-        let trframe2 =
-            format!("{}  {} \x1b[0m", Bg::Hex(0xbcbcbc), Bg::Hex(0x797979));
-
-        let rframe = format!(
-            "{}{}▌\x1b[0m{}{}▌ {} \x1b[0m",
-            Bg::Hex(0xffffff),
-            Fg::Hex(0x797979),
-            Fg::Hex(0xffffff),
-            Bg::Hex(0xbcbcbc),
-            Bg::Hex(0x797979)
-        );
-
-        let mut res = String::new();
-        for y in 0..size.y - 4 {
-            if self.bg {
-                res.push_str(&format!(
-                    "{}{lframe}{}{}{rframe}",
-                    Cursor::Pos(pos.x, pos.y + 2 + y),
-                    Bg::Hex(0xbcbcbc),
-                    " ".repeat(size.x - 7),
-                ));
-            } else {
-                res.push_str(&format!(
-                    "{}{lframe}{}{rframe}",
-                    Cursor::Pos(pos.x, pos.y + 2 + y),
-                    Cursor::Pos(pos.x + size.x - 4, pos.y + 2 + y),
-                ));
-            }
-        }
-
-        res.push_str(&format!(
-            "{}{}{}{}",
-            Cursor::Pos(pos.x, pos.y),
-            tlframe1,
-            tframe1,
-            trframe1
-        ));
-        if let Some(top_bar) = &self.top_bar {
-            res.push_str(&format!(
-                "{}{} {}{}{} {}",
-                Cursor::Pos(pos.x, pos.y + 1),
-                Bg::Hex(0xffffff),
-                Bg::Hex(0xbcbcbc),
-                " ".repeat(size.x - 2),
-                Bg::Hex(0x797979),
-                Bg::Hex(0xbcbcbc),
-            ));
-            res.push_str(&top_bar.get_string(
-                &Coords::new(pos.x + 3, pos.y + 1),
-                &Coords::new(size.x - 6, 1),
-            ));
-        }
-        res.push_str(&format!(
-            "{}{}{}{}",
-            Cursor::Pos(pos.x, pos.y + 1 + self.top_bar.is_some() as usize),
-            tlframe2,
-            tframe2,
-            trframe2
-        ));
-
-        res.push_str(&format!(
-            "{}{blframe1}{bframe1}{brframe1}",
-            Cursor::Pos(
-                pos.x,
-                pos.y + size.y - 2 - self.bot_bar.is_some() as usize
-            )
-        ));
-        if let Some(bot_bar) = &self.bot_bar {
-            res.push_str(&format!(
-                "{}{} {}{}{} {}",
-                Cursor::Pos(pos.x, pos.y + size.y - 2),
-                Bg::Hex(0xffffff),
-                Bg::Hex(0xbcbcbc),
-                " ".repeat(size.x - 2),
-                Bg::Hex(0x797979),
-                Bg::Hex(0xbcbcbc),
-            ));
-            res.push_str(&bot_bar.get_string(
-                &Coords::new(pos.x + 3, pos.y + size.y - 2),
-                &Coords::new(size.x - 6, 1),
-            ));
-        }
-        res.push_str(&format!(
-            "{}{blframe2}{bframe2}{brframe2}",
-            Cursor::Pos(pos.x, pos.y + size.y - 1)
-        ));
-
-        res.push_str(&self.board.get_string(
-            &Coords::new(
-                pos.x + 3,
-                pos.y + 2 + self.top_bar.is_some() as usize,
-            ),
-            &Coords::new(
-                size.x.saturating_sub(7),
-                size.y.saturating_sub(
-                    4 + self.top_bar.is_some() as usize
-                        + self.bot_bar.is_some() as usize,
-                ),
-            ),
-        ));
-        res
+    fn height(&self, size: &Vec2) -> usize {
+        self.content.height(size) + self.bar_height()
     }
 
-    fn height(&self, size: &Coords) -> usize {
-        self.board.height(size)
-            + 4
-            + self.top_bar.is_some() as usize
-            + self.bot_bar.is_some() as usize
+    fn width(&self, size: &Vec2) -> usize {
+        self.content.width(size) + 7
     }
 
-    fn width(&self, size: &Coords) -> usize {
-        self.board.width(size) + 7
+    fn children(&self) -> Vec<&Element> {
+        let mut children = vec![&self.content];
+        if let Some(child) = self.top_bar.as_ref() {
+            children.push(child);
+        }
+        if let Some(child) = self.bot_bar.as_ref() {
+            children.push(child);
+        }
+        children
+    }
+}
+
+impl Border {
+    fn render_inner(
+        &self,
+        buffer: &mut Buffer,
+        rect: Rect,
+        cache: &mut Cache,
+    ) {
+        let (bc, ff, sn) = Self::get_colors();
+
+        let hframe_width = rect.width().saturating_sub(7);
+        let hframe = "▄".repeat(hframe_width);
+        let ehframe = " ".repeat(rect.width().saturating_sub(2));
+
+        let ffbc = Style::new().bg(ff).fg(bc);
+        let bcsn = Style::new().bg(bc).fg(sn);
+
+        let mut pos = *rect.pos();
+        let end = pos.x + hframe_width + 6;
+
+        buffer.set_str_styled(format!(" ▄▄▄{hframe}▄▄"), &pos, ffbc);
+        buffer.set_str_styled("▄", &Vec2::new(end, pos.y), bcsn);
+
+        pos.y += 1;
+        let crect =
+            Rect::new(pos.x + 3, pos.y, rect.width().saturating_sub(7), 1);
+        let mut cache_id = 1;
+        if let Some(top) = &self.top_bar {
+            buffer.set_str_styled(
+                &ehframe,
+                &Vec2::new(pos.x + 1, pos.y),
+                bcsn,
+            );
+            buffer[pos].bg(ff);
+            buffer.set_str_styled(
+                " ",
+                &Vec2::new(end, pos.y),
+                Style::new().bg(sn),
+            );
+            top.render(buffer, crect, &mut cache.children[cache_id]);
+            cache_id += 1;
+            pos.y += 1;
+        }
+
+        buffer.set_str_styled(" ", &pos, ffbc);
+        buffer.set_str_styled(
+            format!(" ▗▄{hframe}  "),
+            &Vec2::new(pos.x + 1, pos.y),
+            bcsn,
+        );
+        buffer.set_str_styled(
+            " ",
+            &Vec2::new(pos.x + hframe_width + 6, pos.y),
+            Style::new().bg(sn),
+        );
+
+        let snbc = Style::new().bg(sn).fg(bc);
+        let bcff = Style::new().bg(bc).fg(ff);
+
+        let mut sel = Style::new().bg(ff).fg(sn);
+        if self.bg {
+            sel = ffbc;
+        }
+
+        let bgframe = " ".repeat(hframe_width);
+        for _ in 0..rect.height().saturating_sub(self.bar_height()) {
+            pos.y += 1;
+
+            buffer.set_str_styled(" ", &pos, ffbc);
+            buffer.set_str_styled(" ", &Vec2::new(pos.x + 1, pos.y), bcff);
+            buffer.set_str_styled("▌", &Vec2::new(pos.x + 2, pos.y), snbc);
+            buffer.set_str_styled(
+                format!("▌{bgframe}"),
+                &Vec2::new(pos.x + 3, pos.y),
+                bcsn,
+            );
+
+            pos.x += hframe_width + 3;
+            buffer.set_str_styled("▌", &pos, sel);
+            buffer.set_str_styled("▌ ", &Vec2::new(pos.x + 1, pos.y), bcff);
+            buffer.set_str_styled(" ", &Vec2::new(pos.x + 3, pos.y), snbc);
+
+            pos.x = rect.x();
+        }
+
+        pos.y += 1;
+        buffer.set_str_styled(" ", &pos, ffbc);
+        buffer.set_str_styled("  ", &Vec2::new(pos.x + 1, pos.y), bcff);
+        buffer.set_str_styled(
+            format!("{hframe}▄▟"),
+            &Vec2::new(pos.x + 3, pos.y),
+            ffbc,
+        );
+        buffer.set_str_styled(" ", &Vec2::new(end - 1, pos.y), bcff);
+        buffer.set_str_styled(" ", &Vec2::new(end, pos.y), snbc);
+
+        pos.y += 1;
+        let crect =
+            Rect::new(pos.x + 3, pos.y, rect.width().saturating_sub(7), 1);
+        if let Some(bot) = &self.bot_bar {
+            buffer.set_str_styled(ehframe, &Vec2::new(pos.x + 1, pos.y), bcsn);
+            buffer[pos].bg(ff);
+            buffer.set_str_styled(
+                " ",
+                &Vec2::new(end, pos.y),
+                Style::new().bg(sn),
+            );
+            bot.render(buffer, crect, &mut cache.children[cache_id]);
+            pos.y += 1;
+        }
+        buffer.set_str_styled("▄", &pos, ffbc);
+        buffer.set_str_styled(
+            format!("▄▄{hframe}▄▄▄"),
+            &Vec2::new(pos.x + 1, pos.y),
+            bcsn,
+        );
+        buffer.set_str_styled(" ", &Vec2::new(end, pos.y), snbc);
+    }
+
+    fn content_padding(&self) -> Padding {
+        let mut padding = Padding::new(2, 4, 2, 3);
+        padding.top += self.top_bar.is_some() as usize;
+        padding.bottom += self.bot_bar.is_some() as usize;
+        padding
+    }
+
+    fn bar_height(&self) -> usize {
+        4 + self.top_bar.is_some() as usize + self.bot_bar.is_some() as usize
+    }
+
+    fn get_colors() -> (Color, Color, Color) {
+        (
+            Color::Hex(0xbcbcbc),
+            Color::Hex(0xffffff),
+            Color::Hex(0x797979),
+        )
+    }
+}
+
+impl From<Border> for Element {
+    fn from(value: Border) -> Self {
+        Element::new(value)
     }
 }
 

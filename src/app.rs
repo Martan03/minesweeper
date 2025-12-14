@@ -8,15 +8,15 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode},
 };
 use termint::{
-    enums::modifier::Modifier,
-    geometry::{constrain::Constrain, coords::Coords, text_align::TextAlign},
+    enums::Modifier,
+    geometry::{Constraint, TextAlign, Vec2},
     term::Term,
-    widgets::{layout::Layout, span::StrSpanExtension, widget::Widget},
+    widgets::{Layout, ToSpan},
 };
 
 use crate::{
     args::Difficulty,
-    board::board::Board,
+    board::board_struct::Board,
     error::Error,
     game_state::{GameState, Screen},
 };
@@ -26,28 +26,27 @@ pub struct App {
     pub board: Board,
     pub state: GameState,
     pub screen: Screen,
-    pub size: Coords,
-    pub picker_cur: usize,
+    pub picker_state: usize,
+    pub term: Term,
 }
 
 impl App {
-    pub fn new(dif: Option<Difficulty>) -> Self {
-        let (board, screen) = match dif {
+    /// Creates new [`App`]
+    pub fn new(diff: Option<Difficulty>) -> Self {
+        let (board, screen) = match diff {
             Some(dif) => {
                 let (w, h, m) = dif.config();
-                (Board::new(w, h, m), Screen::Game)
+                (Board::new(Vec2::new(w, h), m), Screen::Game)
             }
-            None => (Board::new(0, 0, 0), Screen::Picker),
+            None => (Board::new(Vec2::new(0, 0), 0), Screen::DiffPicker),
         };
 
         Self {
             board,
             state: GameState::Playing,
             screen,
-            size: Term::get_size()
-                .map(|(w, h)| Coords::new(w, h))
-                .unwrap_or(Coords::new(0, 0)),
-            picker_cur: 0,
+            picker_state: 0,
+            term: Term::new().small_screen(Self::small_screen()),
         }
     }
 
@@ -73,7 +72,7 @@ impl App {
 
     /// Main loop of the [`App`]
     fn main_loop(&mut self) -> Result<(), Error> {
-        self.render();
+        self.render()?;
         loop {
             if poll(Duration::from_millis(100))? {
                 self.event()?;
@@ -82,27 +81,21 @@ impl App {
     }
 
     /// Renders the [`App`]
-    pub fn render(&mut self) {
-        let layout = match self.screen {
+    pub fn render(&mut self) -> Result<(), Error> {
+        let screen = match self.screen {
             Screen::Game => self.render_game(),
-            Screen::Picker => self.render_picker(),
             Screen::Help => self.render_help(),
+            Screen::DiffPicker => self.render_dp(),
         };
-        layout.render(&Coords::new(1, 1), &self.size);
+        self.term.render(screen)?;
+        Ok(())
     }
 
     /// Handles key listening of the [`App`]
     fn event(&mut self) -> Result<(), Error> {
         match read()? {
             Event::Key(e) => self.key_handler(e),
-            Event::Resize(w, h) => {
-                print!("\x1b[H\x1b[J");
-                _ = stdout().flush();
-
-                self.size = Coords::new(w as usize, h as usize);
-                self.render();
-                Ok(())
-            }
+            Event::Resize(_, _) => self.render(),
             _ => Ok(()),
         }
     }
@@ -111,23 +104,23 @@ impl App {
     fn key_handler(&mut self, event: KeyEvent) -> Result<(), Error> {
         match self.screen {
             Screen::Game => self.listen_game(event),
-            Screen::Picker => self.listen_picker(event),
             Screen::Help => self.listen_help(event),
+            Screen::DiffPicker => self.listen_dp(event),
         }
     }
 
     /// Small screen to be displayed, when game can't fit
-    pub fn small_screen() -> Layout {
+    fn small_screen() -> Layout {
         let mut layout = Layout::vertical().center();
-        layout.add_child(
+        layout.push(
             "Terminal too small!"
-                .modifier(vec![Modifier::Bold])
+                .modifier(Modifier::BOLD)
                 .align(TextAlign::Center),
-            Constrain::Min(0),
+            Constraint::Min(0),
         );
-        layout.add_child(
+        layout.push(
             "You have to increase terminal size".align(TextAlign::Center),
-            Constrain::Min(0),
+            Constraint::Min(0),
         );
         layout
     }
@@ -136,13 +129,11 @@ impl App {
 impl Default for App {
     fn default() -> Self {
         Self {
-            board: Board::new(1, 1, 1),
+            board: Board::new(Vec2::new(0, 0), 0),
             state: GameState::Playing,
-            screen: Screen::Picker,
-            size: Term::get_size()
-                .map(|(w, h)| Coords::new(w, h))
-                .unwrap_or(Coords::new(0, 0)),
-            picker_cur: 0,
+            screen: Screen::DiffPicker,
+            picker_state: 0,
+            term: Term::new().small_screen(Self::small_screen()),
         }
     }
 }

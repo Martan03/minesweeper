@@ -1,7 +1,9 @@
 use termint::{
-    enums::{bg::Bg, cursor::Cursor, fg::Fg, modifier::Modifier},
-    geometry::coords::Coords,
-    widgets::widget::Widget,
+    buffer::Buffer,
+    enums::{Color, Modifier},
+    geometry::{Rect, Vec2},
+    style::Style,
+    widgets::{cache::Cache, Element, Widget},
 };
 
 /// Widget that prints text on given coordinates
@@ -9,11 +11,10 @@ use termint::{
 /// It doesn't implement any wrapping or anything else, it is used only for
 /// raw printing - for example using len() on emojis returns 4 and Span widget
 /// adds ellipsis and doesn't print the emoji, when the width is less then 4
+#[derive(Debug, Clone)]
 pub struct RawSpan {
     text: String,
-    fg: Fg,
-    bg: Option<Bg>,
-    modifier: Option<Modifier>,
+    style: Style,
 }
 
 impl RawSpan {
@@ -21,55 +22,73 @@ impl RawSpan {
     pub fn new<T: AsRef<str>>(text: T) -> Self {
         Self {
             text: text.as_ref().to_string(),
-            fg: Default::default(),
-            bg: None,
-            modifier: None,
+            style: Default::default(),
         }
     }
 
+    /// Sets style of the [`RawSpan`]
+    pub fn style<T>(mut self, style: T) -> Self
+    where
+        T: Into<Style>,
+    {
+        self.style = style.into();
+        self
+    }
+
     /// Sets foreground color of [`RawSpan`]
-    pub fn fg(mut self, fg: Fg) -> Self {
-        self.fg = fg;
+    pub fn fg<T>(mut self, fg: T) -> Self
+    where
+        T: Into<Option<Color>>,
+    {
+        self.style = self.style.fg(fg);
         self
     }
 
     /// Sets background color of [`RawSpan`]
-    pub fn bg<T: Into<Option<Bg>>>(mut self, bg: T) -> Self {
-        self.bg = bg.into();
+    pub fn bg<T>(mut self, bg: T) -> Self
+    where
+        T: Into<Option<Color>>,
+    {
+        self.style = self.style.bg(bg);
         self
     }
 
     /// Sets [`RawSpan`] modifier
     pub fn modifier(mut self, modifier: Modifier) -> Self {
-        self.modifier = Some(modifier);
+        self.style = self.style.modifier(modifier);
         self
     }
 }
 
 impl Widget for RawSpan {
-    fn render(&self, pos: &Coords, size: &Coords) {
-        print!("{}", self.get_string(pos, size));
+    fn render(&self, buffer: &mut Buffer, rect: Rect, _cache: &mut Cache) {
+        let stext: String = self.text.chars().take(buffer.area()).collect();
+        buffer.set_str_styled(&stext, rect.pos(), self.style);
     }
 
-    fn get_string(&self, pos: &Coords, _size: &Coords) -> String {
-        format!(
-            "{}{}{}{}{}\x1b[0m",
-            self.bg.map(|v| v.to_string()).unwrap_or("".to_string()),
-            self.modifier
-                .map(|v| v.to_string())
-                .unwrap_or("".to_string()),
-            Cursor::Pos(pos.x, pos.y),
-            self.fg,
-            self.text,
-        )
+    fn height(&self, size: &Vec2) -> usize {
+        let mut height = 0;
+        for line in self.text.lines() {
+            height +=
+                (line.chars().count() as f32 / size.x as f32).ceil() as usize;
+        }
+        height
     }
 
-    fn height(&self, _size: &Coords) -> usize {
-        1
+    fn width(&self, size: &Vec2) -> usize {
+        let mut width = 0;
+        for line in self.text.lines() {
+            let w =
+                (line.chars().count() as f32 / size.x as f32).ceil() as usize;
+            width = width.max(w);
+        }
+        width
     }
+}
 
-    fn width(&self, _size: &Coords) -> usize {
-        self.text.chars().count()
+impl From<RawSpan> for Element {
+    fn from(value: RawSpan) -> Self {
+        Element::new(value)
     }
 }
 

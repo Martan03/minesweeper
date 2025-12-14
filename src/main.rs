@@ -1,15 +1,19 @@
-use std::{
-    env, fs::create_dir_all, io::{stdout, Write}, panic::{set_hook, take_hook}, process::{Command, ExitCode}
-};
-
 use app::App;
+use std::{
+    env,
+    fs::create_dir_all,
+    io::{stdout, Write},
+    panic::{set_hook, take_hook},
+    process::{Command, ExitCode},
+};
+use termint::{enums::Color, widgets::ToSpan};
+
 use args::Action;
 use config::{config_dir, config_file, Config};
 use crossterm::terminal::{disable_raw_mode, is_raw_mode_enabled};
 use error::Result;
 use help::print_help;
 use pareg::Pareg;
-use termint::{enums::fg::Fg, widgets::span::StrSpanExtension};
 
 use crate::args::Args;
 
@@ -26,7 +30,7 @@ fn main() -> ExitCode {
     match run() {
         Ok(_) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("{} {}", "Error:".fg(Fg::Red), e);
+            eprintln!("{} {}", "Error:".fg(Color::Red), e);
             ExitCode::FAILURE
         }
     }
