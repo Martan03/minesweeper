@@ -14,24 +14,25 @@ use super::raw_span::RawSpan;
 impl App {
     /// Renders help page
     pub fn render_help(&mut self) -> Element {
-        let mut help = Layout::vertical().padding((1, 2));
-        help.push(Self::help_item("←↑↓→", 9, "cursor movement"), 1);
-        help.push(Self::help_item("f", 9, "toggle flag"), 1);
-        help.push(Self::help_item("d/Enter", 9, "display/reveal cell"), 1);
-        help.push(Self::help_item("r", 9, "restart game"), 1);
-        help.push(Self::help_item("i", 9, "toggle help"), 1);
-        help.push(Self::help_item("c", 9, "center the cursor"), 1);
-        help.push(Self::help_item("Esc", 9, "quit game"), 1);
+        let mut help = Layout::vertical().padding((1, 1, 1, 2));
+        help.push(Self::help_item("←↑↓→/hjkl", 11, "cursor movement"), 1);
+        help.push(Self::help_item("f", 11, "toggle flag"), 1);
+        help.push(Self::help_item("d/Enter", 11, "display/reveal cell"), 1);
+        help.push(Self::help_item("r", 11, "restart game"), 1);
+        help.push(Self::help_item("i", 11, "toggle help"), 1);
+        help.push(Self::help_item("c", 11, "center the cursor"), 1);
+        help.push(Self::help_item("Tab", 11, "open difficulty picker"), 1);
+        help.push(Self::help_item("Esc", 11, "quit game"), 1);
 
         let mut top_bar = Layout::horizontal();
         top_bar.push("Help".fg(Color::Hex(0x303030)), Constraint::Min(0));
 
         let border = Border::new(help, true).top_bar(top_bar);
         let mut wrapper = Layout::vertical().center();
-        wrapper.push(border, Constraint::Length(14));
+        wrapper.push(border, Constraint::Min(0));
 
         let mut layout = Layout::horizontal().center();
-        layout.push(wrapper, Constraint::Length(39));
+        layout.push(wrapper, Constraint::Length(43));
         layout.into()
     }
 
