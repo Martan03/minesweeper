@@ -15,8 +15,7 @@ use super::widgets::border::Border;
 
 impl App {
     pub fn render_game(&mut self) -> Element {
-        let help = "🛈 Press i for help"
-            .fg(Color::Hex(0x303030));
+        let help = "🛈 Press i for help".fg(Color::Hex(0x303030));
 
         let bsize = &self.board.size;
         let mut grid = Grid::new(vec![6; bsize.x], vec![3; bsize.y]);

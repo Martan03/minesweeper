@@ -52,17 +52,22 @@ impl Widget for Button {
         buffer.set_bg(db, &Vec2::new(pos.x + crect.width() + 2, pos.y));
 
         pos.y += 1;
-        buffer[pos] = Cell::new('▌').bg(w).fg(db);
+        let mut cell_wdb = Cell::new("▌");
+        cell_wdb.bg(w).fg(db);
+        buffer[pos] = cell_wdb.clone();
+
         buffer.set_str_styled(
             format!("▌{}", " ".repeat(crect.width() + 1)),
             &Vec2::new(pos.x + 1, pos.y),
             Style::new().bg(lb).fg(w),
         );
-        buffer[Vec2::new(pos.x + crect.width() + 2, pos.y)] =
-            Cell::new('▌').bg(db).fg(lb);
+
+        let mut cell_dblb = Cell::new("▌");
+        cell_dblb.bg(db).fg(lb);
+        buffer[Vec2::new(pos.x + crect.width() + 2, pos.y)] = cell_dblb;
 
         pos.y += 1;
-        buffer[pos] = Cell::new('▌').bg(w).fg(db);
+        buffer[pos] = cell_wdb;
         pos.x += 1;
         buffer.set_str_styled(
             format!("▘{hline}▟"),

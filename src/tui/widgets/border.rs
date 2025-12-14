@@ -105,7 +105,7 @@ impl Border {
                 &Vec2::new(pos.x + 1, pos.y),
                 bcsn,
             );
-            buffer[pos] = buffer[pos].bg(ff);
+            buffer[pos].bg(ff);
             buffer.set_str_styled(
                 " ",
                 &Vec2::new(end, pos.y),
@@ -173,7 +173,7 @@ impl Border {
             Rect::new(pos.x + 3, pos.y, rect.width().saturating_sub(7), 1);
         if let Some(bot) = &self.bot_bar {
             buffer.set_str_styled(ehframe, &Vec2::new(pos.x + 1, pos.y), bcsn);
-            buffer[pos] = buffer[pos].bg(ff);
+            buffer[pos].bg(ff);
             buffer.set_str_styled(
                 " ",
                 &Vec2::new(end, pos.y),
