@@ -63,7 +63,14 @@ impl Board {
             return false;
         }
 
-        if self.cells[id].is_visible() {
+        if self.cells[id].is_visible()
+            && self
+                .get_neighbors(&self.cur)
+                .iter()
+                .filter(|c| self.cells[c.x + c.y * self.size.x].is_flag())
+                .count()
+                == self.cells[id].get() as usize
+        {
             return self.reveal_vis();
         } else {
             self.reveal_cell(&self.cur.clone());
