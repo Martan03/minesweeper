@@ -1,8 +1,8 @@
 use crossterm::event::{KeyCode, KeyEvent};
 use termint::{
     enums::Color,
-    geometry::{Constraint, Rect},
-    widgets::{Element, Grid, Layout, Spacer, ToSpan},
+    geometry::Constraint,
+    widgets::{Element, Layout, Spacer, ToSpan},
 };
 
 use crate::{
@@ -17,12 +17,7 @@ impl App {
     pub fn render_game(&mut self) -> Element {
         let help = "🛈 Press i for help".fg(Color::Hex(0x303030));
 
-        let bsize = &self.board.size;
-        let mut grid = Grid::new(vec![6; bsize.x], vec![3; bsize.y]);
-        for pos in Rect::new(0, 0, bsize.x, bsize.y) {
-            grid.push(self.board[pos].element(), pos.x, pos.y);
-        }
-
+        let grid = self.board.get_element();
         let border = Border::new(grid, false)
             .top_bar(self.get_stats())
             .bot_bar(help);
@@ -61,6 +56,7 @@ impl App {
                 self.board.reset();
                 self.state = GameState::Playing;
             }
+            KeyCode::Char('c') => self.board.center(),
             KeyCode::Char('i') => self.screen = Screen::Help,
             KeyCode::Tab => self.screen = Screen::DiffPicker,
             KeyCode::Char('q') | KeyCode::Esc => return Err(Error::Exit),

@@ -1,7 +1,10 @@
 use std::ops::{Index, IndexMut};
 
 use rand::{thread_rng, Rng};
-use termint::geometry::Vec2;
+use termint::{
+    geometry::{Rect, Vec2},
+    widgets::{Element, Grid},
+};
 
 use super::cell::{Cell, CellType};
 
@@ -20,19 +23,28 @@ pub struct Board {
 impl Board {
     /// Creates new [`Board`] with given size
     pub fn new(size: Vec2, mines: usize) -> Self {
-        let mut cells = vec![Cell::new(0x00); size.x * size.y];
-        if size.x > 0 && size.y > 0 {
-            cells[0].sel();
-        }
-        Self {
+        let cells = vec![Cell::new(0x00); size.x * size.y];
+        let mut board = Self {
             size,
             cells,
             mines,
             generated: false,
-            cur: Vec2::new(0, 0),
+            cur: center_of(size.x, size.y),
             rev: 0,
             flags: 0,
+        };
+        if size.x > 0 && size.y > 0 {
+            board.cells[board.cur.x + board.cur.y * size.x].sel();
         }
+        board
+    }
+
+    pub fn get_element(&self) -> Element {
+        let mut grid = Grid::new(vec![6; self.size.x], vec![3; self.size.y]);
+        for pos in Rect::new(0, 0, self.size.x, self.size.y) {
+            grid.push(self[pos].element(), pos.x, pos.y);
+        }
+        grid.into()
     }
 
     /// Reveals current [`Cell`] and its neighbors when 0
@@ -97,34 +109,35 @@ impl Board {
         self.mines as isize - self.flags as isize
     }
 
+    /// Centers the cursor
+    pub fn center(&mut self) {
+        self.select(center_of(self.size.x, self.size.y));
+    }
+
     pub fn cur_up(&mut self) {
-        self.cells[self.cur.x + self.cur.y * self.size.x].sel();
-        self.cur.y = self.cur.y.checked_sub(1).unwrap_or(self.size.y - 1);
-        self.cells[self.cur.x + self.cur.y * self.size.x].sel();
+        let y = self.cur.y.checked_sub(1).unwrap_or(self.size.y - 1);
+        self.select(Vec2::new(self.cur.x, y));
     }
 
     pub fn cur_down(&mut self) {
-        self.cells[self.cur.x + self.cur.y * self.size.x].sel();
-        self.cur.y += 1;
+        let mut y = self.cur.y + 1;
         if self.cur.y >= self.size.y {
-            self.cur.y = 0;
+            y = 0;
         }
-        self.cells[self.cur.x + self.cur.y * self.size.x].sel();
+        self.select(Vec2::new(self.cur.x, y));
     }
 
     pub fn cur_left(&mut self) {
-        self.cells[self.cur.x + self.cur.y * self.size.x].sel();
-        self.cur.x = self.cur.x.checked_sub(1).unwrap_or(self.size.x - 1);
-        self.cells[self.cur.x + self.cur.y * self.size.x].sel();
+        let x = self.cur.x.checked_sub(1).unwrap_or(self.size.x - 1);
+        self.select(Vec2::new(x, self.cur.y));
     }
 
     pub fn cur_right(&mut self) {
-        self.cells[self.cur.x + self.cur.y * self.size.x].sel();
-        self.cur.x += 1;
+        let mut x = self.cur.x + 1;
         if self.cur.x >= self.size.x {
-            self.cur.x = 0;
+            x = 0;
         }
-        self.cells[self.cur.x + self.cur.y * self.size.x].sel();
+        self.select(Vec2::new(x, self.cur.y));
     }
 }
 
@@ -154,6 +167,12 @@ impl Board {
             self.cells[id].set(0xff);
             self.inc_neighbors(id);
         }
+    }
+
+    fn select(&mut self, pos: Vec2) {
+        self.cells[self.cur.x + self.cur.y * self.size.x].sel();
+        self.cur = pos;
+        self.cells[self.cur.x + self.cur.y * self.size.x].sel();
     }
 
     /// Increments value of cell neighbors
@@ -245,6 +264,10 @@ impl Board {
             cells.push(Vec2::new(x as usize, y as usize));
         }
     }
+}
+
+fn center_of(x: usize, y: usize) -> Vec2 {
+    Vec2::new(x.saturating_sub(1) / 2, y.saturating_sub(1) / 2)
 }
 
 impl Index<usize> for Board {
