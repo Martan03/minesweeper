@@ -1,19 +1,21 @@
-use crossterm::event::{KeyCode, KeyEvent};
 use termint::{
     enums::Color,
     geometry::Constraint,
-    widgets::{Element, Layout, Span, ToSpan},
+    prelude::{KeyCode, KeyEvent},
+    term::Action,
+    widgets::{Layout, Span, ToSpan},
 };
 
 use crate::{
-    app::App, error::Error, game_state::Screen, tui::widgets::border::Border,
+    app::App,
+    game_state::Screen,
+    tui::{widgets::border::Border, Element},
 };
 
-use super::raw_span::RawSpan;
 
 impl App {
     /// Renders help page
-    pub fn render_help(&mut self) -> Element {
+    pub fn render_help(&self) -> Element {
         let mut help = Layout::vertical().padding((1, 1, 1, 2));
         help.push(Self::help_item("←↑↓→/hjkl", 11, "cursor movement"), 1);
         help.push(Self::help_item("f", 11, "toggle flag"), 1);
@@ -37,13 +39,13 @@ impl App {
     }
 
     /// Key listener for help page
-    pub fn listen_help(&mut self, event: KeyEvent) -> Result<(), Error> {
+    pub fn listen_help(&mut self, event: KeyEvent) -> Action {
         match event.code {
             KeyCode::Char('i') => self.screen = Screen::Game,
-            KeyCode::Esc | KeyCode::Char('q') => return Err(Error::ExitErr),
-            _ => return Ok(()),
+            KeyCode::Esc | KeyCode::Char('q') => return Action::QUIT,
+            _ => return Action::NONE,
         }
-        self.render()
+        Action::RENDER
     }
 }
 
@@ -52,7 +54,7 @@ impl App {
     fn help_item(key: &str, key_len: usize, action: &str) -> Layout {
         let mut layout = Layout::horizontal();
         layout.push(
-            RawSpan::new(format!("{key}:"))
+            Span::new(format!("{key}:"))
                 .fg(Color::Hex(0x0000ff))
                 .bg(Color::Hex(0xbcbcbc)),
             Constraint::Length(key_len),

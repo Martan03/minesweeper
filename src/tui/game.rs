@@ -1,20 +1,21 @@
-use crossterm::event::{KeyCode, KeyEvent};
 use termint::{
     enums::Color,
     geometry::Constraint,
-    widgets::{Element, Layout, Spacer, ToSpan},
+    prelude::{KeyCode, KeyEvent},
+    term::Action,
+    widgets::{Layout, Spacer, ToSpan},
 };
 
 use crate::{
     app::App,
-    error::Error,
     game_state::{GameState, Screen},
+    tui::Element,
 };
 
 use super::widgets::border::Border;
 
 impl App {
-    pub fn render_game(&mut self) -> Element {
+    pub fn render_game(&self) -> Element {
         let help = "🛈 Press i for help".fg(Color::Hex(0x303030));
 
         let grid = self.board.get_element();
@@ -31,7 +32,7 @@ impl App {
         main.into()
     }
 
-    pub fn listen_game(&mut self, event: KeyEvent) -> Result<(), Error> {
+    pub fn listen_game(&mut self, event: KeyEvent) -> Action {
         match event.code {
             KeyCode::Up | KeyCode::Char('k') => self.board.cur_up(),
             KeyCode::Down | KeyCode::Char('j') => self.board.cur_down(),
@@ -59,10 +60,10 @@ impl App {
             KeyCode::Char('c') => self.board.center(),
             KeyCode::Char('i') => self.screen = Screen::Help,
             KeyCode::Tab => self.screen = Screen::DiffPicker,
-            KeyCode::Char('q') | KeyCode::Esc => return Err(Error::ExitErr),
-            _ => return Ok(()),
+            KeyCode::Char('q') | KeyCode::Esc => return Action::QUIT,
+            _ => return Action::NONE,
         }
-        self.render()
+        Action::RENDER
     }
 
     fn get_stats(&self) -> Layout {

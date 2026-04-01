@@ -3,7 +3,7 @@ use termint::{
     enums::Color,
     geometry::{Padding, Rect, Vec2},
     style::Style,
-    widgets::{cache::Cache, Element, Widget},
+    widgets::{Element, LayoutNode, Widget},
 };
 
 pub struct Border {
@@ -46,11 +46,10 @@ impl Border {
 }
 
 impl Widget for Border {
-    fn render(&self, buffer: &mut Buffer, rect: Rect, cache: &mut Cache) {
-        self.render_inner(buffer, rect, cache);
+    fn render(&self, buffer: &mut Buffer, node: &LayoutNode) {
+        self.render_inner(buffer, node);
 
-        let crect = rect.inner(self.content_padding());
-        self.content.render(buffer, crect, &mut cache.children[0]);
+        self.content.render(buffer, &node.children[0]);
     }
 
     fn height(&self, size: &Vec2) -> usize {
@@ -71,15 +70,46 @@ impl Widget for Border {
         }
         children
     }
+
+    fn layout(&self, node: &mut LayoutNode, area: Rect) {
+        if !node.is_dirty && !node.has_dirty_child && node.area == area {
+            return;
+        }
+
+        node.area = area;
+        node.is_dirty = false;
+        node.has_dirty_child = false;
+
+        let crect = area.inner(self.content_padding());
+        self.content.layout(&mut node.children[0], crect);
+
+        let mut cid = 1;
+        if let Some(top) = &self.top_bar {
+            let tr = Rect::new(
+                area.x() + 3,
+                area.y() + 1,
+                area.width().saturating_sub(7),
+                1,
+            );
+            top.layout(&mut node.children[cid], tr);
+            cid += 1;
+        }
+
+        if let Some(bot) = &self.bot_bar {
+            let br = Rect::new(
+                area.x() + 3,
+                area.y() + 4 + crect.height(),
+                area.width().saturating_sub(7),
+                1,
+            );
+            bot.layout(&mut node.children[cid], br);
+        }
+    }
 }
 
 impl Border {
-    fn render_inner(
-        &self,
-        buffer: &mut Buffer,
-        rect: Rect,
-        cache: &mut Cache,
-    ) {
+    fn render_inner(&self, buffer: &mut Buffer, node: &LayoutNode) {
+        let rect = node.area;
         let (bc, ff, sn) = Self::get_colors();
 
         let hframe_width = rect.width().saturating_sub(7);
@@ -96,8 +126,6 @@ impl Border {
         buffer.set_str_styled("▄", &Vec2::new(end, pos.y), bcsn);
 
         pos.y += 1;
-        let crect =
-            Rect::new(pos.x + 3, pos.y, rect.width().saturating_sub(7), 1);
         let mut cache_id = 1;
         if let Some(top) = &self.top_bar {
             buffer.set_str_styled(
@@ -111,7 +139,7 @@ impl Border {
                 &Vec2::new(end, pos.y),
                 Style::new().bg(sn),
             );
-            top.render(buffer, crect, &mut cache.children[cache_id]);
+            top.render(buffer, &node.children[cache_id]);
             cache_id += 1;
             pos.y += 1;
         }
@@ -137,7 +165,7 @@ impl Border {
         }
 
         let bgframe = " ".repeat(hframe_width);
-        for _ in 0..rect.height().saturating_sub(self.bar_height()) {
+        for _ in 0..node.children[0].area.height() {
             pos.y += 1;
 
             buffer.set_str_styled(" ", &pos, ffbc);
@@ -169,8 +197,6 @@ impl Border {
         buffer.set_str_styled(" ", &Vec2::new(end, pos.y), snbc);
 
         pos.y += 1;
-        let crect =
-            Rect::new(pos.x + 3, pos.y, rect.width().saturating_sub(7), 1);
         if let Some(bot) = &self.bot_bar {
             buffer.set_str_styled(ehframe, &Vec2::new(pos.x + 1, pos.y), bcsn);
             buffer[pos].bg(ff);
@@ -179,7 +205,7 @@ impl Border {
                 &Vec2::new(end, pos.y),
                 Style::new().bg(sn),
             );
-            bot.render(buffer, crect, &mut cache.children[cache_id]);
+            bot.render(buffer, &node.children[cache_id]);
             pos.y += 1;
         }
         buffer.set_str_styled("▄", &pos, ffbc);

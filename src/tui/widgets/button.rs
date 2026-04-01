@@ -3,7 +3,7 @@ use termint::{
     enums::Color,
     geometry::{Rect, Vec2},
     style::Style,
-    widgets::{cache::Cache, Element, Widget},
+    widgets::{Element, LayoutNode, Widget},
 };
 
 #[derive(Debug)]
@@ -38,10 +38,11 @@ impl Button {
 }
 
 impl Widget for Button {
-    fn render(&self, buffer: &mut Buffer, rect: Rect, cache: &mut Cache) {
+    fn render(&self, buffer: &mut Buffer, node: &LayoutNode) {
+        let rect = node.area;
         let (lb, db, w) = self.get_colors();
 
-        let crect = rect.inner((1, 1, 1, 2));
+        let crect = node.children[0].area;
         let hline = "▄".repeat(crect.width());
 
         let wlb = Style::new().bg(w).fg(lb);
@@ -76,7 +77,7 @@ impl Widget for Button {
         );
         buffer.set_fg(w, &pos);
 
-        self.content.render(buffer, crect, &mut cache.children[0]);
+        self.content.render(buffer, &node.children[0]);
     }
 
     fn height(&self, _size: &Vec2) -> usize {
@@ -89,6 +90,19 @@ impl Widget for Button {
 
     fn children(&self) -> Vec<&Element> {
         vec![&self.content]
+    }
+
+    fn layout(&self, node: &mut LayoutNode, area: Rect) {
+        if !node.is_dirty && !node.has_dirty_child && node.area == area {
+            return;
+        }
+
+        node.area = area;
+        node.is_dirty = false;
+        node.has_dirty_child = false;
+
+        let crect = area.inner((1, 1, 1, 2));
+        self.content.layout(&mut node.children[0], crect);
     }
 }
 

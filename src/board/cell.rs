@@ -1,12 +1,12 @@
 use termint::{
     buffer::Buffer,
-    enums::{Color, Modifier},
+    enums::{Color, Modifier, Wrap},
     geometry::{Rect, Vec2},
     style::Style,
-    widgets::{cache::Cache, Element, Widget},
+    widgets::{Element, LayoutNode, Span, Widget},
 };
 
-use crate::tui::{raw_span::RawSpan, widgets::button::Button};
+use crate::tui::widgets::button::Button;
 
 /// Enum representing cell type
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -99,8 +99,8 @@ impl Cell {
 }
 
 impl Widget for Cell {
-    fn render(&self, buffer: &mut Buffer, rect: Rect, _cache: &mut Cache) {
-        self.render_visible(buffer, rect);
+    fn render(&self, buffer: &mut Buffer, node: &LayoutNode) {
+        self.render_visible(buffer, node.area);
     }
 
     fn height(&self, _size: &Vec2) -> usize {
@@ -145,11 +145,14 @@ impl Cell {
 
     fn get_hidden(&self) -> Button {
         let text = match self.cell_type {
-            CellType::Flag => RawSpan::new(" ▶ ").fg(Color::Hex(0xff0000)),
-            CellType::WrongFlag => RawSpan::new(" ▶ ")
+            CellType::Flag => {
+                Span::new(" ▶ ").fg(Color::Hex(0xff0000)).wrap(Wrap::Letter)
+            }
+            CellType::WrongFlag => Span::new(" ▶ ")
                 .modifier(Modifier::STRIKED)
-                .fg(Color::Hex(0xff0000)),
-            _ => RawSpan::new("   "),
+                .fg(Color::Hex(0xff0000))
+                .wrap(Wrap::Letter),
+            _ => Span::new("   ").wrap(Wrap::Letter),
         };
         Button::new(text).selected(self.sel)
     }

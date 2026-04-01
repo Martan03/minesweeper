@@ -1,23 +1,14 @@
-use std::{
-    io::{stdout, Write},
-    time::Duration,
-};
-
-use crossterm::{
-    event::{poll, read, Event, KeyEvent},
-    terminal::{disable_raw_mode, enable_raw_mode},
-};
 use termint::{
     enums::Modifier,
     geometry::{Constraint, TextAlign, Vec2},
-    term::Term,
-    widgets::{Layout, ToSpan},
+    prelude::Event,
+    term::{Action, Application, Frame},
+    widgets::{Element, Layout, ToSpan},
 };
 
 use crate::{
     args::Difficulty,
     board::board_struct::Board,
-    error::Error,
     game_state::{GameState, Screen},
 };
 
@@ -27,7 +18,6 @@ pub struct App {
     pub state: GameState,
     pub screen: Screen,
     pub picker_state: usize,
-    pub term: Term,
 }
 
 impl App {
@@ -46,71 +36,11 @@ impl App {
             state: GameState::Playing,
             screen,
             picker_state: 0,
-            term: Term::new().small_screen(Self::small_screen()),
-        }
-    }
-
-    /// Runs the [`App`]
-    pub fn run(&mut self) -> Result<(), Error> {
-        enable_raw_mode()?;
-        // Swaps print buffer, clears screen and hides cursor
-        print!("\x1b[?1049h\x1b[2J\x1b[?25l");
-        _ = stdout().flush();
-
-        let res = self.main_loop();
-
-        // Restores screen
-        print!("\x1b[?1049l\x1b[?25h");
-        _ = stdout().flush();
-        disable_raw_mode()?;
-
-        match res {
-            Err(Error::ExitErr) => Ok(()),
-            _ => res,
-        }
-    }
-
-    /// Main loop of the [`App`]
-    fn main_loop(&mut self) -> Result<(), Error> {
-        self.render()?;
-        loop {
-            if poll(Duration::from_millis(100))? {
-                self.event()?;
-            }
-        }
-    }
-
-    /// Renders the [`App`]
-    pub fn render(&mut self) -> Result<(), Error> {
-        let screen = match self.screen {
-            Screen::Game => self.render_game(),
-            Screen::Help => self.render_help(),
-            Screen::DiffPicker => self.render_dp(),
-        };
-        self.term.render(screen)?;
-        Ok(())
-    }
-
-    /// Handles key listening of the [`App`]
-    fn event(&mut self) -> Result<(), Error> {
-        match read()? {
-            Event::Key(e) => self.key_handler(e),
-            Event::Resize(_, _) => self.render(),
-            _ => Ok(()),
-        }
-    }
-
-    /// Handles key events
-    fn key_handler(&mut self, event: KeyEvent) -> Result<(), Error> {
-        match self.screen {
-            Screen::Game => self.listen_game(event),
-            Screen::Help => self.listen_help(event),
-            Screen::DiffPicker => self.listen_dp(event),
         }
     }
 
     /// Small screen to be displayed, when game can't fit
-    fn small_screen() -> Layout {
+    pub fn small_screen() -> Layout {
         let mut layout = Layout::vertical().center();
         layout.push(
             "Terminal too small!"
@@ -126,6 +56,34 @@ impl App {
     }
 }
 
+impl Application for App {
+    type Message = ();
+
+    fn view(&self, _frame: &Frame) -> Element<Self::Message> {
+        match self.screen {
+            Screen::Game => self.render_game(),
+            Screen::Help => self.render_help(),
+            Screen::DiffPicker => self.render_dp(),
+        }
+    }
+
+    fn event(&mut self, event: Event) -> Action {
+        let Event::Key(key) = event else {
+            return Action::NONE;
+        };
+
+        match self.screen {
+            Screen::Game => self.listen_game(key),
+            Screen::Help => self.listen_help(key),
+            Screen::DiffPicker => self.listen_dp(key),
+        }
+    }
+
+    fn message(&mut self, _message: Self::Message) -> Action {
+        Action::NONE
+    }
+}
+
 impl Default for App {
     fn default() -> Self {
         Self {
@@ -133,7 +91,6 @@ impl Default for App {
             state: GameState::Playing,
             screen: Screen::DiffPicker,
             picker_state: 0,
-            term: Term::new().small_screen(Self::small_screen()),
         }
     }
 }

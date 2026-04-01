@@ -3,14 +3,12 @@ use std::{
     env,
     fs::create_dir_all,
     io::{stdout, Write},
-    panic::{set_hook, take_hook},
     process::{Command, ExitCode},
 };
-use termint::{enums::Color, widgets::ToSpan};
+use termint::{enums::Color, term::Term, widgets::ToSpan};
 
 use args::Action;
 use config::{config_dir, config_file, Config};
-use crossterm::terminal::{disable_raw_mode, is_raw_mode_enabled};
 use error::Result;
 use help::print_help;
 use pareg::Pareg;
@@ -24,6 +22,7 @@ mod config;
 mod error;
 mod game_state;
 mod help;
+mod message;
 mod tui;
 
 fn main() -> ExitCode {
@@ -37,9 +36,6 @@ fn main() -> ExitCode {
 }
 
 fn run() -> Result<()> {
-    // Restore the terminal even when we panic
-    register_panic_hook();
-
     let args = Args::parse(Pareg::args())?;
     match args.action {
         Action::Play => play(args),
@@ -59,7 +55,12 @@ fn play(args: Args) -> Result<()> {
 
 fn start_game(args: Args, conf: Config) -> Result<()> {
     let mut app = App::new(args.diff.or(conf.default_difficulty));
-    app.run()
+    Term::default()
+        .setup()?
+        .with_mouse()
+        .small_screen(App::small_screen())
+        .run(&mut app)?;
+    Ok(())
 }
 
 fn config() -> Result<()> {
@@ -72,17 +73,4 @@ fn config() -> Result<()> {
 
     Command::new(editor).arg(file).spawn()?.wait()?;
     Ok(())
-}
-
-fn register_panic_hook() {
-    let hook = take_hook();
-    set_hook(Box::new(move |pi| {
-        if is_raw_mode_enabled().unwrap_or_default() {
-            // Restores screen
-            print!("\x1b[?1049l\x1b[?25h");
-            _ = stdout().flush();
-            _ = disable_raw_mode();
-        }
-        hook(pi);
-    }));
 }
