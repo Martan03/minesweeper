@@ -10,6 +10,7 @@ use crate::{
     args::Difficulty,
     board::board_struct::Board,
     game_state::{GameState, Screen},
+    message::Message,
 };
 
 #[derive(Debug)]
@@ -40,7 +41,7 @@ impl App {
     }
 
     /// Small screen to be displayed, when game can't fit
-    pub fn small_screen() -> Layout {
+    pub fn small_screen() -> Layout<Message> {
         let mut layout = Layout::vertical().center();
         layout.push(
             "Terminal too small!"
@@ -57,10 +58,10 @@ impl App {
 }
 
 impl Application for App {
-    type Message = ();
+    type Message = Message;
 
     fn view(&self, _frame: &Frame) -> Element<Self::Message> {
-        match self.screen {
+        match &self.screen {
             Screen::Game => self.render_game(),
             Screen::Help => self.render_help(),
             Screen::DiffPicker => self.render_dp(),
@@ -72,15 +73,19 @@ impl Application for App {
             return Action::NONE;
         };
 
-        match self.screen {
+        match &self.screen {
             Screen::Game => self.listen_game(key),
             Screen::Help => self.listen_help(key),
             Screen::DiffPicker => self.listen_dp(key),
         }
     }
 
-    fn message(&mut self, _message: Self::Message) -> Action {
-        Action::NONE
+    fn message(&mut self, message: Self::Message) -> Action {
+        match &self.screen {
+            Screen::Game => self.message_game(message),
+            Screen::DiffPicker => self.message_dp(message),
+            Screen::Help => Action::NONE,
+        }
     }
 }
 

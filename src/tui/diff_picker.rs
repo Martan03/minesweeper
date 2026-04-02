@@ -3,7 +3,7 @@ use termint::{
     geometry::{Constraint, TextAlign, Vec2},
     prelude::{KeyCode, KeyEvent},
     term::Action,
-    widgets::{Layout, ToSpan},
+    widgets::{Button as TButton, Layout, ToSpan},
 };
 
 use crate::{
@@ -11,6 +11,7 @@ use crate::{
     args::Difficulty,
     board::board_struct::Board,
     game_state::Screen,
+    message::Message,
     tui::{
         widgets::{border::Border, button::Button},
         Element,
@@ -44,27 +45,34 @@ impl App {
             KeyCode::Down | KeyCode::Char('j') => {
                 self.picker_state += (self.picker_state < 2) as usize
             }
-            KeyCode::Enter => self.eval_diff(),
+            KeyCode::Enter => self.eval_diff(self.picker_state),
             KeyCode::Esc | KeyCode::Char('q') => return Action::QUIT,
             _ => return Action::NONE,
         };
         Action::RENDER
     }
 
-    fn eval_diff(&mut self) {
-        let diff = match self.picker_state {
-            0 => Difficulty::Easy,
-            1 => Difficulty::Medium,
-            _ => Difficulty::Hard,
-        };
+    pub fn message_dp(&mut self, message: Message) -> Action {
+        match message {
+            Message::DiffSel(id) => self.eval_diff(id),
+            _ => return Action::NONE,
+        }
+        Action::RENDER
+    }
+
+    fn eval_diff(&mut self, id: usize) {
+        let diff = Difficulty::from_index(id);
         let (w, h, m) = diff.config();
         self.board = Board::new(Vec2::new(w, h), m);
         self.screen = Screen::Game;
     }
 
     /// Difficulty picker button getter
-    fn get_button(&self, text: &str, id: usize) -> Button {
-        Button::new(text.fg(Color::Hex(0x303030)).align(TextAlign::Center))
-            .selected(id == self.picker_state)
+    fn get_button(&self, text: &str, id: usize) -> TButton<Message> {
+        let btn = Button::new(
+            text.fg(Color::Hex(0x303030)).align(TextAlign::Center),
+        )
+        .selected(id == self.picker_state);
+        TButton::new(btn).on_click(Message::DiffSel(id))
     }
 }

@@ -7,16 +7,16 @@ use termint::{
 };
 
 #[derive(Debug)]
-pub struct Button {
-    content: Element,
+pub struct Button<M: 'static> {
+    content: Element<M>,
     selected: bool,
 }
 
-impl Button {
+impl<M: Clone + 'static> Button<M> {
     /// Creates new minesweeper style [`Button`]
     pub fn new<E>(content: E) -> Self
     where
-        E: Into<Element>,
+        E: Into<Element<M>>,
     {
         Self {
             content: content.into(),
@@ -37,7 +37,7 @@ impl Button {
     }
 }
 
-impl Widget for Button {
+impl<M: Clone + 'static> Widget<M> for Button<M> {
     fn render(&self, buffer: &mut Buffer, node: &LayoutNode) {
         let rect = node.area;
         let (lb, db, w) = self.get_colors();
@@ -88,7 +88,7 @@ impl Widget for Button {
         self.content.width(&Vec2::new(size.x, 1)) + 3
     }
 
-    fn children(&self) -> Vec<&Element> {
+    fn children(&self) -> Vec<&Element<M>> {
         vec![&self.content]
     }
 
@@ -106,7 +106,7 @@ impl Widget for Button {
     }
 }
 
-impl Button {
+impl<M: Clone + 'static> Button<M> {
     fn get_colors(&self) -> (Color, Color, Color) {
         if self.selected {
             (
@@ -124,14 +124,14 @@ impl Button {
     }
 }
 
-impl From<Button> for Box<dyn Widget> {
-    fn from(value: Button) -> Self {
+impl<M: Clone + 'static> From<Button<M>> for Box<dyn Widget<M>> {
+    fn from(value: Button<M>) -> Self {
         Box::new(value)
     }
 }
 
-impl From<Button> for Element {
-    fn from(value: Button) -> Self {
+impl<M: Clone + 'static> From<Button<M>> for Element<M> {
+    fn from(value: Button<M>) -> Self {
         Element::new(value)
     }
 }

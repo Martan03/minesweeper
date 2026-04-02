@@ -3,10 +3,13 @@ use termint::{
     enums::{Color, Modifier, Wrap},
     geometry::{Rect, Vec2},
     style::Style,
-    widgets::{Element, LayoutNode, Span, Widget},
+    widgets::{LayoutNode, Span, Widget},
 };
 
-use crate::tui::widgets::button::Button;
+use crate::{
+    message::Message,
+    tui::{widgets::button::Button, Element},
+};
 
 /// Enum representing cell type
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -98,7 +101,7 @@ impl Cell {
     }
 }
 
-impl Widget for Cell {
+impl Widget<Message> for Cell {
     fn render(&self, buffer: &mut Buffer, node: &LayoutNode) {
         self.render_visible(buffer, node.area);
     }
@@ -143,7 +146,7 @@ impl Cell {
         buffer.set_bg(lb, &pos);
     }
 
-    fn get_hidden(&self) -> Button {
+    fn get_hidden(&self) -> Button<Message> {
         let text = match self.cell_type {
             CellType::Flag => {
                 Span::new(" ▶ ").fg(Color::Hex(0xff0000)).wrap(Wrap::Letter)
@@ -179,7 +182,7 @@ impl From<Cell> for Element {
     }
 }
 
-impl From<Cell> for Box<dyn Widget> {
+impl From<Cell> for Box<dyn Widget<Message>> {
     fn from(value: Cell) -> Self {
         Box::new(value)
     }

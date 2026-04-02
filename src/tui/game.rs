@@ -9,6 +9,7 @@ use termint::{
 use crate::{
     app::App,
     game_state::{GameState, Screen},
+    message::Message,
     tui::Element,
 };
 
@@ -39,19 +40,10 @@ impl App {
             KeyCode::Left | KeyCode::Char('h') => self.board.cur_left(),
             KeyCode::Right | KeyCode::Char('l') => self.board.cur_right(),
             KeyCode::Enter | KeyCode::Char('d') if self.state.is_playing() => {
-                if !self.board.reveal() {
-                    self.state = GameState::GameOver;
-                    self.board.reveal_mines();
-                }
-                if self.board.win() {
-                    self.state = GameState::Win;
-                }
+                self.reveal_board_cell();
             }
             KeyCode::Char('f') if self.state.is_playing() => {
-                self.board.flag();
-                if self.board.win() {
-                    self.state = GameState::Win;
-                }
+                self.flag_board_cell();
             }
             KeyCode::Char('r') => {
                 self.board.reset();
@@ -66,7 +58,26 @@ impl App {
         Action::RENDER
     }
 
-    fn get_stats(&self) -> Layout {
+    pub fn message_game(&mut self, message: Message) -> Action {
+        match message {
+            Message::CellReveal(pos) => {
+                self.board.select(pos);
+                if self.state.is_playing() {
+                    self.reveal_board_cell();
+                }
+            }
+            Message::CellFlag(pos) => {
+                self.board.select(pos);
+                if self.state.is_playing() {
+                    self.flag_board_cell();
+                }
+            }
+            _ => return Action::NONE,
+        }
+        Action::RENDER
+    }
+
+    fn get_stats(&self) -> Layout<Message> {
         let mut layout = Layout::horizontal();
         layout.push(
             format!("{}", self.board.flags_left()).fg(Color::Hex(0x303030)),
@@ -81,5 +92,22 @@ impl App {
             );
         }
         layout
+    }
+
+    fn reveal_board_cell(&mut self) {
+        if !self.board.reveal() {
+            self.state = GameState::GameOver;
+            self.board.reveal_mines();
+        }
+        if self.board.win() {
+            self.state = GameState::Win;
+        }
+    }
+
+    fn flag_board_cell(&mut self) {
+        self.board.flag();
+        if self.board.win() {
+            self.state = GameState::Win;
+        }
     }
 }

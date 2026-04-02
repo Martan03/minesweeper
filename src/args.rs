@@ -17,6 +17,14 @@ pub enum Difficulty {
 }
 
 impl Difficulty {
+    pub fn from_index(id: usize) -> Self {
+        match id {
+            0 => Difficulty::Easy,
+            1 => Difficulty::Medium,
+            _ => Difficulty::Hard,
+        }
+    }
+
     /// Gets size and number of mines
     pub fn config(&self) -> (usize, usize, usize) {
         match self {

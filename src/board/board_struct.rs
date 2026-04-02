@@ -3,8 +3,11 @@ use std::ops::{Index, IndexMut};
 use rand::{thread_rng, Rng};
 use termint::{
     geometry::{Rect, Vec2},
-    widgets::{Element, Grid},
+    prelude::MouseButton,
+    widgets::{Button, Grid},
 };
+
+use crate::{message::Message, tui::Element};
 
 use super::cell::{Cell, CellType};
 
@@ -43,7 +46,10 @@ impl Board {
     pub fn get_element(&self) -> Element {
         let mut grid = Grid::new(vec![6; self.size.x], vec![3; self.size.y]);
         for pos in Rect::new(0, 0, self.size.x, self.size.y) {
-            grid.push(self[pos].element(), pos.x, pos.y);
+            let button = Button::new(self[pos].element())
+                .on_click(Message::CellReveal(pos))
+                .on_press(MouseButton::Right, Message::CellFlag(pos));
+            grid.push(button, pos.x, pos.y);
         }
         grid.into()
     }
@@ -117,6 +123,13 @@ impl Board {
         self.mines as isize - self.flags as isize
     }
 
+    /// Selects the cell on given position. This doesn't check bounds.
+    pub fn select(&mut self, pos: Vec2) {
+        self.cells[self.cur.x + self.cur.y * self.size.x].sel();
+        self.cur = pos;
+        self.cells[self.cur.x + self.cur.y * self.size.x].sel();
+    }
+
     /// Centers the cursor
     pub fn center(&mut self) {
         self.select(center_of(self.size.x, self.size.y));
@@ -175,12 +188,6 @@ impl Board {
             self.cells[id].set(0xff);
             self.inc_neighbors(id);
         }
-    }
-
-    fn select(&mut self, pos: Vec2) {
-        self.cells[self.cur.x + self.cur.y * self.size.x].sel();
-        self.cur = pos;
-        self.cells[self.cur.x + self.cur.y * self.size.x].sel();
     }
 
     /// Increments value of cell neighbors

@@ -6,17 +6,17 @@ use termint::{
     widgets::{Element, LayoutNode, Widget},
 };
 
-pub struct Border {
-    content: Element,
-    top_bar: Option<Element>,
-    bot_bar: Option<Element>,
+pub struct Border<M: 'static> {
+    content: Element<M>,
+    top_bar: Option<Element<M>>,
+    bot_bar: Option<Element<M>>,
     bg: bool,
 }
 
-impl Border {
+impl<M: Clone + 'static> Border<M> {
     pub fn new<E>(content: E, bg: bool) -> Self
     where
-        E: Into<Element>,
+        E: Into<Element<M>>,
     {
         Self {
             content: content.into(),
@@ -29,7 +29,7 @@ impl Border {
     /// Sets top bar to given [`Widget`]
     pub fn top_bar<E>(mut self, bar: E) -> Self
     where
-        E: Into<Element>,
+        E: Into<Element<M>>,
     {
         self.top_bar = Some(bar.into());
         self
@@ -38,14 +38,14 @@ impl Border {
     /// Sets bottom bar to given [`Widget`]
     pub fn bot_bar<E>(mut self, bar: E) -> Self
     where
-        E: Into<Element>,
+        E: Into<Element<M>>,
     {
         self.bot_bar = Some(bar.into());
         self
     }
 }
 
-impl Widget for Border {
+impl<M: Clone + 'static> Widget<M> for Border<M> {
     fn render(&self, buffer: &mut Buffer, node: &LayoutNode) {
         self.render_inner(buffer, node);
 
@@ -60,7 +60,7 @@ impl Widget for Border {
         self.content.width(size) + 7
     }
 
-    fn children(&self) -> Vec<&Element> {
+    fn children(&self) -> Vec<&Element<M>> {
         let mut children = vec![&self.content];
         if let Some(child) = self.top_bar.as_ref() {
             children.push(child);
@@ -107,7 +107,7 @@ impl Widget for Border {
     }
 }
 
-impl Border {
+impl<M: Clone + 'static> Border<M> {
     fn render_inner(&self, buffer: &mut Buffer, node: &LayoutNode) {
         let rect = node.area;
         let (bc, ff, sn) = Self::get_colors();
@@ -237,14 +237,14 @@ impl Border {
     }
 }
 
-impl From<Border> for Element {
-    fn from(value: Border) -> Self {
+impl<M: Clone + 'static> From<Border<M>> for Element<M> {
+    fn from(value: Border<M>) -> Self {
         Element::new(value)
     }
 }
 
-impl From<Border> for Box<dyn Widget> {
-    fn from(value: Border) -> Self {
+impl<M: Clone + 'static> From<Border<M>> for Box<dyn Widget<M>> {
+    fn from(value: Border<M>) -> Self {
         Box::new(value)
     }
 }

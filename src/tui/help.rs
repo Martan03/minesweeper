@@ -9,9 +9,9 @@ use termint::{
 use crate::{
     app::App,
     game_state::Screen,
+    message::Message,
     tui::{widgets::border::Border, Element},
 };
-
 
 impl App {
     /// Renders help page
@@ -51,7 +51,7 @@ impl App {
 
 impl App {
     /// Gets help item layout
-    fn help_item(key: &str, key_len: usize, action: &str) -> Layout {
+    fn help_item(key: &str, key_len: usize, action: &str) -> Layout<Message> {
         let mut layout = Layout::horizontal();
         layout.push(
             Span::new(format!("{key}:"))
