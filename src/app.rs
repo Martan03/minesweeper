@@ -69,14 +69,20 @@ impl Application for App {
     }
 
     fn event(&mut self, event: Event) -> Action {
-        let Event::Key(key) = event else {
-            return Action::NONE;
-        };
-
-        match &self.screen {
-            Screen::Game => self.listen_game(key),
-            Screen::Help => self.listen_help(key),
-            Screen::DiffPicker => self.listen_dp(key),
+        match event {
+            Event::Key(key) => {
+                self.board.selectable = true;
+                match &self.screen {
+                    Screen::Game => self.listen_game(key),
+                    Screen::Help => self.listen_help(key),
+                    Screen::DiffPicker => self.listen_dp(key),
+                }
+            }
+            Event::Mouse(_) => {
+                self.board.selectable = false;
+                Action::NONE
+            }
+            _ => Action::NONE,
         }
     }
 

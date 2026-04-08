@@ -77,6 +77,11 @@ impl Cell {
         self.sel = !self.sel;
     }
 
+    /// Sets whether [`Cell`] is selected based on the given `bool`.
+    pub fn selected(&mut self, sel: bool) {
+        self.sel = sel;
+    }
+
     /// Checks whether cell is mine
     pub fn is_mine(&self) -> bool {
         self.value == 0xff || self.value == 0xfe

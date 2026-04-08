@@ -19,6 +19,7 @@ pub struct Board {
     pub mines: usize,
     generated: bool,
     pub cur: Vec2,
+    pub selectable: bool,
     rev: usize,
     flags: usize,
 }
@@ -33,6 +34,7 @@ impl Board {
             mines,
             generated: false,
             cur: center_of(size.x, size.y),
+            selectable: true,
             rev: 0,
             flags: 0,
         };
@@ -125,9 +127,11 @@ impl Board {
 
     /// Selects the cell on given position. This doesn't check bounds.
     pub fn select(&mut self, pos: Vec2) {
-        self.cells[self.cur.x + self.cur.y * self.size.x].sel();
+        self.cells[self.cur.x + self.cur.y * self.size.x].selected(false);
         self.cur = pos;
-        self.cells[self.cur.x + self.cur.y * self.size.x].sel();
+        if self.selectable {
+            self.cells[self.cur.x + self.cur.y * self.size.x].sel();
+        }
     }
 
     /// Centers the cursor
