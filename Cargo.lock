@@ -655,14 +655,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a766a6fe27d8a55afd9db7201c14c65712843ce74b9683cec2fa6e2e72805e0"
 dependencies = [
  "base64",
- "bitflags",
- "libc",
  "litrs 1.0.0",
  "minlin",
  "place_macro",
  "proc-macro2",
  "thiserror 2.0.18",
- "winapi",
 ]
 
 [[package]]
@@ -685,9 +682,9 @@ dependencies = [
 
 [[package]]
 name = "termint"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1007671fc1f8fdd6606038758eec8d7a7e6c97767db60ac0506b8f804054d4eb"
+checksum = "c3c4849957aae7450574f54194a8bf8929b69a88e310aa52c52d2ab40d1da3e4"
 dependencies = [
  "bitflags",
  "compact_str",

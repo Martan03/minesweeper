@@ -93,16 +93,7 @@ impl<M: Clone + 'static> Widget<M> for Button<M> {
     }
 
     fn layout(&self, node: &mut LayoutNode, area: Rect) {
-        if !node.is_dirty && !node.has_dirty_child && node.area == area {
-            return;
-        }
-
-        node.area = area;
-        node.is_dirty = false;
-        node.has_dirty_child = false;
-
-        let crect = area.inner((1, 1, 1, 2));
-        self.content.layout(&mut node.children[0], crect);
+        node.children[0].layout(&self.content, area.inner((1, 1, 1, 2)));
     }
 }
 

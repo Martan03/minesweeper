@@ -72,16 +72,8 @@ impl<M: Clone + 'static> Widget<M> for Border<M> {
     }
 
     fn layout(&self, node: &mut LayoutNode, area: Rect) {
-        if !node.is_dirty && !node.has_dirty_child && node.area == area {
-            return;
-        }
-
-        node.area = area;
-        node.is_dirty = false;
-        node.has_dirty_child = false;
-
         let crect = area.inner(self.content_padding());
-        self.content.layout(&mut node.children[0], crect);
+        node.children[0].layout(&self.content, crect);
 
         let mut cid = 1;
         if let Some(top) = &self.top_bar {
@@ -91,7 +83,7 @@ impl<M: Clone + 'static> Widget<M> for Border<M> {
                 area.width().saturating_sub(7),
                 1,
             );
-            top.layout(&mut node.children[cid], tr);
+            node.children[cid].layout(top, tr);
             cid += 1;
         }
 
@@ -102,7 +94,7 @@ impl<M: Clone + 'static> Widget<M> for Border<M> {
                 area.width().saturating_sub(7),
                 1,
             );
-            bot.layout(&mut node.children[cid], br);
+            node.children[cid].layout(bot, br);
         }
     }
 }
